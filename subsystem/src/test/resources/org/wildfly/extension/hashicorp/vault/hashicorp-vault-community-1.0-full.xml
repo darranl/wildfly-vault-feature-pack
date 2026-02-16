@@ -17,10 +17,7 @@
 
     <credential-store name="secure-vault" 
                       host-address="https://vault.secure.com:8200"
-                      namespace="admin"
-                      truststore-path="/opt/security/truststore.jks"
-                      keystore-path="/opt/security/keystore.jks"
-                      truststore-password="secure-password">
+                      namespace="admin">
         <credential-reference clear-text="secure-token-123"/>
     </credential-store>
 
@@ -30,7 +27,8 @@
     </credential-store>
 
     <credential-store name="minimal-store"
-                      host-address="http://localhost:8200">
+                      host-address="http://localhost:8200"
+                      authentication-context="vault-tls-context">
         <credential-reference clear-text="test-token"/>
     </credential-store>
 </subsystem>

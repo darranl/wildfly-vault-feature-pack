@@ -74,9 +74,6 @@ $WILDFLY_HOME/bin/jboss-cli.sh --connect
 
 /subsystem=hashicorp-vault/credential-store=secure-vault:add(
     host-address="https://vault.example.com:8200",
-    truststore-path="/opt/security/truststore.jks",
-    keystore-path="/opt/security/keystore.jks",
-    truststore-password="keystore-password",
     credential-reference={clear-text="vault-token"}
 )
 

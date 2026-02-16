@@ -54,9 +54,7 @@ Start WildFly with community stability:
 
 /subsystem=hashicorp-vault/credential-store=secure-vault:add(
     host-address="https://vault.example.com:8200",
-    truststore-path="/path/to/truststore.jks",
-    keystore-path="/path/to/keystore.jks",
-    truststore-password="keystore-password",
+    authentication-context=ac,
     credential-reference={clear-text="vault-token"}
 )
 

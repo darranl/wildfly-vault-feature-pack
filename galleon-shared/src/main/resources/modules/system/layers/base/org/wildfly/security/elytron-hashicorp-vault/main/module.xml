@@ -20,6 +20,7 @@
         <module name="io.github.jopenlibs.vault-java-driver"/>
         <module name="org.jboss.logging"/>
         <module name="java.base"/>
+        <module name="java.net.http"/>
     </dependencies>
 </module>
 

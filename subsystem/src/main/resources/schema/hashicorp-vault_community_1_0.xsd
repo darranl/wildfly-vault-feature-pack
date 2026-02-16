@@ -49,24 +49,10 @@
                 </xs:documentation>
             </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="truststore-path" type="xs:string" use="optional">
+        <xs:attribute name="authentication-context" type="xs:string" use="optional">
             <xs:annotation>
                 <xs:documentation>
-                    Path to the truststore file.
-                </xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-        <xs:attribute name="keystore-path" type="xs:string" use="optional">
-            <xs:annotation>
-                <xs:documentation>
-                    Path to the keystore file.
-                </xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-        <xs:attribute name="truststore-password" type="xs:string" use="optional">
-            <xs:annotation>
-                <xs:documentation>
-                    Password for the keystore.
+                    The name of authentication-context used to secure connection to the HashiCorp Vault.
                 </xs:documentation>
             </xs:annotation>
         </xs:attribute>
