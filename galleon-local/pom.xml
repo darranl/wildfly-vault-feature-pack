@@ -7,17 +7,16 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.wildfly.security.hashicorp.vault</groupId>
-        <artifactId>hashicorp-vault-parent</artifactId>
+        <groupId>org.wildfly.security.vault</groupId>
+        <artifactId>wildfly-vault-parent</artifactId>
         <version>1.0.0.Alpha3-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>hashicorp-vault-galleon-local</artifactId>
+    <artifactId>wildfly-vault-galleon-local</artifactId>
     <packaging>pom</packaging>
-    <name>Wildfly Hashicorp Vault -- Local Galleon Content</name>
-  
-    <description>Galleon content for a feature pack that provides support for Hashicorp Vault</description>
+    <name>WildFly Vault Feature Pack -- Local Galleon Content</name>
+    <description>Galleon content for a feature pack that provides credential stores backed by external vaults</description>
 
     <build>
         <plugins>

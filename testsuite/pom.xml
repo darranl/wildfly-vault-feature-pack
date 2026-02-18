@@ -8,8 +8,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.wildfly.security.hashicorp.vault</groupId>
-        <artifactId>hashicorp-vault-parent</artifactId>
+        <groupId>org.wildfly.security.vault</groupId>
+        <artifactId>wildfly-vault-parent</artifactId>
         <!--
         Maintain separation between the artifact id and the version to help prevent
         merge conflicts between commits changing the GA and those changing the V.
@@ -18,11 +18,11 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>wildfly-hashicorp-vault-tests</artifactId>
+    <artifactId>wildfly-vault-tests</artifactId>
     <packaging>jar</packaging>
 
-    <name>WildFly HashiCorp Vault Support -- Testsuite</name>
-    <description>WildFly HashiCorp Vault TestSuite</description>
+    <name>WildFly Vault Feature Pack -- Testsuite</name>
+    <description>WildFly Vault Feature Pack TestSuite</description>
 
     <properties>
 
@@ -34,10 +34,10 @@
         <surefire.system.args>${surefire.memory.args}</surefire.system.args>
         <server.jvm.args>${surefire.memory.args}</server.jvm.args>
         <server.jboss.args>--stability=preview</server.jboss.args>
-        <!-- Feature pack to use to provision hashicorp-vault -->
-        <hashicorp-vault.feature.pack.groupId>${project.groupId}</hashicorp-vault.feature.pack.groupId>
-        <hashicorp-vault.feature.pack.artifactId>wildfly-hashicorp-vault-feature-pack</hashicorp-vault.feature.pack.artifactId>
-        <hashicorp-vault.feature.pack.version>${project.version}</hashicorp-vault.feature.pack.version>
+        <!-- Feature pack to use to provision vault -->
+        <vault.feature.pack.groupId>${project.groupId}</vault.feature.pack.groupId>
+        <vault.feature.pack.artifactId>wildfly-vault-feature-pack</vault.feature.pack.artifactId>
+        <vault.feature.pack.version>${project.version}</vault.feature.pack.version>
 
         <base.feature.pack.groupId>org.wildfly.security</base.feature.pack.groupId>
         <base.feature.pack.artifactId>wildfly-ee-galleon-pack</base.feature.pack.artifactId>
@@ -123,7 +123,7 @@
                     </execution>
                     <!-- Add the subsystem to the wildfly-complete dist's standalone.xml -->
                     <execution>
-                        <id>configure-hashicorp-subsystem-subsystem</id>
+                        <id>configure-vault-subsystem</id>
                         <phase>compile</phase>
                         <goals>
                             <goal>execute-commands</goal>
@@ -162,7 +162,7 @@
                         <configuration>
                             <feature-packs>
                                 <feature-pack>
-                                    <location>${hashicorp-vault.feature.pack.groupId}:${hashicorp-vault.feature.pack.artifactId}:${hashicorp-vault.feature.pack.version}</location>
+                                    <location>${vault.feature.pack.groupId}:${vault.feature.pack.artifactId}:${vault.feature.pack.version}</location>
                                 </feature-pack>
                             </feature-packs>
                         </configuration>
@@ -194,7 +194,7 @@
                                     <inherit-packages>false</inherit-packages>
                                 </feature-pack>
                                 <feature-pack>
-                                    <location>${hashicorp-vault.feature.pack.groupId}:${hashicorp-vault.feature.pack.artifactId}:${hashicorp-vault.feature.pack.version}</location>
+                                    <location>${vault.feature.pack.groupId}:${vault.feature.pack.artifactId}:${vault.feature.pack.version}</location>
                                 </feature-pack>
                             </feature-packs>
                         </configuration>

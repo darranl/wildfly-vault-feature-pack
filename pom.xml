@@ -11,8 +11,8 @@
         <version>50</version>
     </parent>
 
-    <groupId>org.wildfly.security.hashicorp.vault</groupId>
-    <artifactId>hashicorp-vault-parent</artifactId>
+    <groupId>org.wildfly.security.vault</groupId>
+    <artifactId>wildfly-vault-parent</artifactId>
     <!--
     Maintain separation between the artifact id and the version to help prevent
     merge conflicts between commits changing the GA and those changing the V.
@@ -20,8 +20,8 @@
     <version>1.0.0.Alpha3-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>WildFly HashiCorp Vault -- Parent</name>
-    <description>Parent pom for producing a Galleon feature pack for including support for HashiCorp Vault capabilities into a WildFly installation.</description>
+    <name>WildFly Vault Feature Pack -- Parent</name>
+    <description>Parent pom for producing a Galleon feature pack for including support for credential stores backed by external vaults into a WildFly installation.</description>
 
     <licenses>
         <license>
@@ -73,7 +73,7 @@
 
         <!-- Nexus Settings -->
         <nexus.repository.staging>wildfly-staging</nexus.repository.staging>
-        <nexus.staging.tag>wildfly-hashicorp-vault-feature-pack-${project.version}</nexus.staging.tag>
+        <nexus.staging.tag>wildfly-vault-feature-pack-${project.version}</nexus.staging.tag>
         <nexus.repository.release>wildfly-security</nexus.repository.release>
 
     </properties>
@@ -94,9 +94,9 @@
     </developers>
 
     <scm>
-        <connection>scm:git:git@github.com:wildfly-security-incubator/wildfly-hashicorp-vault-feature-pack.git</connection>
-        <developerConnection>scm:git:git@github.com:wildfly-security-incubator/wildfly-hashicorp-vault-feature-pack</developerConnection>
-        <url>https://github.com/wildfly-security-incubator/wildfly-hashicorp-vault-feature-pack</url>
+        <connection>scm:git:git@github.com:wildfly-security-incubator/wildfly-vault-feature-pack.git</connection>
+        <developerConnection>scm:git:git@github.com:wildfly-security-incubator/wildfly-vault-feature-pack</developerConnection>
+        <url>https://github.com/wildfly-security-incubator/wildfly-vault-feature-pack</url>
         <tag>HEAD</tag>
     </scm>
 
@@ -105,14 +105,14 @@
 
             <dependency>
                 <groupId>${project.groupId}</groupId>
-                <artifactId>hashicorp-vault-galleon-shared</artifactId>
+                <artifactId>wildfly-vault-galleon-shared</artifactId>
                 <version>${project.version}</version>
                 <type>pom</type>
             </dependency>
 
             <dependency>
                 <groupId>${project.groupId}</groupId>
-                <artifactId>hashicorp-vault-subsystem</artifactId>
+                <artifactId>wildfly-vault-subsystem</artifactId>
                 <version>${project.version}</version>
                 <exclusions>
                     <exclusion>

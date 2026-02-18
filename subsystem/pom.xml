@@ -8,17 +8,17 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.wildfly.security.hashicorp.vault</groupId>
-        <artifactId>hashicorp-vault-parent</artifactId>
+        <groupId>org.wildfly.security.vault</groupId>
+        <artifactId>wildfly-vault-parent</artifactId>
         <version>1.0.0.Alpha3-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>hashicorp-vault-subsystem</artifactId>
+    <artifactId>wildfly-vault-subsystem</artifactId>
     <packaging>jar</packaging>
 
-    <name>WildFly HashiCorp Vault -- Subsystem</name>
-    <description>WildFly subsystem for HashiCorp Vault</description>
+    <name>WildFly Vault Feature Pack -- Subsystem</name>
+    <description>WildFly subsystem for credential stores backed by external vaults</description>
 
     <build>
         <plugins>

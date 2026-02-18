@@ -3,8 +3,8 @@
 
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.wildfly.security.hashicorp.vault</groupId>
-        <artifactId>hashicorp-vault-parent</artifactId>
+        <groupId>org.wildfly.security.vault</groupId>
+        <artifactId>wildfly-vault-parent</artifactId>
         <!--
         Maintain separation between the artifact id and the version to help prevent
         merge conflicts between commits changing the GA and those changing the V.
@@ -12,11 +12,11 @@
         <version>1.0.0.Alpha3-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
-    <artifactId>wildfly-hashicorp-vault-feature-pack</artifactId>
+    <artifactId>wildfly-vault-feature-pack</artifactId>
     <packaging>pom</packaging>
 
-    <name>WildFly HashiCorp Vault -- Feature Pack</name>
-    <description>WildFly feature pack for HashiCorp Vault</description>
+    <name>WildFly Vault Feature Pack</name>
+    <description>WildFly feature pack for credential stores backed by external vaults</description>
 
     <properties>
         <galleon.local.resources.directory>${project.basedir}/../galleon-local/src/main/resources</galleon.local.resources.directory>
@@ -63,8 +63,8 @@
 
         <!-- module and copy artifact dependencies -->
         <dependency>
-            <groupId>org.wildfly.security.hashicorp.vault</groupId>
-            <artifactId>hashicorp-vault-galleon-shared</artifactId>
+            <groupId>org.wildfly.security.vault</groupId>
+            <artifactId>wildfly-vault-galleon-shared</artifactId>
             <type>pom</type>
             <scope>provided</scope>
         </dependency>
@@ -146,12 +146,12 @@
                             <sortByGroupIdAndArtifactId>true</sortByGroupIdAndArtifactId>
                             <licensesConfigFiles>
                                 <licensesConfigFile>
-                                    ${galleon.shared.resources.directory}/wildfly-hashicorp-vault-license/licenses.xml</licensesConfigFile>
+                                    ${galleon.shared.resources.directory}/license/wildfly-vault-feature-pack-licenses.xml</licensesConfigFile>
                             </licensesConfigFiles>
                             <licensesOutputFile>
-                                ${license.directory}/wildfly-hashicorp-vault-feature-pack-licenses.xml</licensesOutputFile>
+                                ${license.directory}/wildfly-vault-feature-pack-licenses.xml</licensesOutputFile>
                             <excludedGroups>org.wildfly.galleon-plugins</excludedGroups>
-                            <excludedArtifacts>wildfly-hashicorp-vault-galleon-sharedpack\z</excludedArtifacts>
+                            <excludedArtifacts>wildfly-vault-galleon-sharedpack\z</excludedArtifacts>
                         </configuration>
                     </execution>
                 </executions>
@@ -161,7 +161,7 @@
                 <artifactId>wildfly-galleon-maven-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>wildfly-hashicorp-vault-feature-pack-build</id>
+                        <id>wildfly-vault-feature-pack-build</id>
                         <goals>
                             <goal>build-feature-pack</goal>
                         </goals>
