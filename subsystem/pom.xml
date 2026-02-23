@@ -153,5 +153,18 @@
             <groupId>org.wildfly.security.hashicorp.vault</groupId>
             <artifactId>wildfly-elytron-hashicorp-vault</artifactId>
         </dependency>
+        <!-- Testcontainers for Vault integration tests -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <version>${version.org.testcontainers}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-vault</artifactId>
+            <version>${version.org.testcontainers}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>

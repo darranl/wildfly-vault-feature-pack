@@ -28,7 +28,6 @@
 
         <version.org.jboss.arquillian>1.9.5.Final</version.org.jboss.arquillian>
         <version.org.wildfly.arquillian>5.0.1.Final</version.org.wildfly.arquillian>
-        <version.org.testcontainers>2.0.2</version.org.testcontainers>
         <version.org.junit>6.0.0</version.org.junit>
         <surefire.memory.args>-Xmx512m -XX:MetaspaceSize=128m</surefire.memory.args>
         <surefire.jpda.args>-agentlib:jdwp=transport=dt_socket,address=*:${as.debug.port},server=y,suspend=y</surefire.jpda.args>
