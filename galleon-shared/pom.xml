@@ -7,8 +7,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.wildfly.security.hashicorp.vault</groupId>
-        <artifactId>hashicorp-vault-parent</artifactId>
+        <groupId>org.wildfly.security.vault</groupId>
+        <artifactId>wildfly-vault-parent</artifactId>
         <!--
         Maintain separation between the artifact id and the version to help prevent
         merge conflicts between commits changing the GA and those changing the V.
@@ -17,16 +17,16 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>hashicorp-vault-galleon-shared</artifactId>
+    <artifactId>wildfly-vault-galleon-shared</artifactId>
     <packaging>pom</packaging>
 
-    <name>WildFly HashiCorp Vault -- Shared Galleon Content</name>
-    <description>Galleon content for a feature pack that provides support for HashiCorp Vault</description>
+    <name>WildFly Vault Feature Pack -- Shared Galleon Content</name>
+    <description>Galleon content for a feature pack that provides credential stores backed by external vaults</description>
 
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>hashicorp-vault-subsystem</artifactId>
+            <artifactId>wildfly-vault-subsystem</artifactId>
         </dependency>
         <dependency>
             <groupId>org.wildfly.security.hashicorp.vault</groupId>
