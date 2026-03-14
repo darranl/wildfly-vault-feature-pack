@@ -68,6 +68,7 @@
         <version.org.apache.httpcomponents>5.2.1</version.org.apache.httpcomponents>
         <version.org.jboss.jboss-dmr>1.6.1.Final</version.org.jboss.jboss-dmr>
         <version.org.jsoup.jsoup>1.15.3</version.org.jsoup.jsoup>
+        <version.org.testcontainers>2.0.2</version.org.testcontainers>
         <version.shrinkwrap.resolvers>3.1.4</version.shrinkwrap.resolvers>
         <version.org.wildfly.test>${version.org.wildfly}</version.org.wildfly.test>
 
