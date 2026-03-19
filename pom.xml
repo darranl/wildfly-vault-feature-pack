@@ -71,7 +71,6 @@
         <version.org.testcontainers>2.0.2</version.org.testcontainers>
         <version.shrinkwrap.resolvers>3.1.4</version.shrinkwrap.resolvers>
         <version.org.wildfly.test>${version.org.wildfly}</version.org.wildfly.test>
-        <version.org.testcontainers>2.0.2</version.org.testcontainers>
 
         <!-- Nexus Settings -->
         <nexus.repository.staging>wildfly-staging</nexus.repository.staging>
@@ -155,6 +154,14 @@
                 <groupId>org.wildfly.security.hashicorp.vault</groupId>
                 <artifactId>wildfly-elytron-hashicorp-vault</artifactId>
                 <version>1.0.0.Alpha3</version>
+            </dependency>
+
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>wildfly-vault-subsystem</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
