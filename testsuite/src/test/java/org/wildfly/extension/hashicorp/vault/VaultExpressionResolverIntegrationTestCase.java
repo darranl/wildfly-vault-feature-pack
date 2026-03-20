@@ -7,12 +7,11 @@ package org.wildfly.extension.hashicorp.vault;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OUTCOME;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SUCCESS;
 import static org.jboss.as.controller.security.CredentialReference.CREDENTIAL_STORE_CAPABILITY;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -28,17 +27,17 @@ import org.jboss.as.version.Stability;
 import org.jboss.dmr.ModelNode;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceName;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.vault.VaultContainer;
 
 /**
  * Integration tests for {@link VaultExpressionResolver} using Testcontainers Vault.
  */
-public class VaultExpressionResolverIntegrationTestCase extends SubsystemTestCase {
+public class VaultExpressionResolverIntegrationTestCase extends SubsystemJUnit5TestCase {
 
     private static final String VAULT_TOKEN = "myroot";
     private static final String CREDENTIAL_STORE_NAME = "vault-store";
@@ -50,7 +49,7 @@ public class VaultExpressionResolverIntegrationTestCase extends SubsystemTestCas
     private KernelServices kernelServices;
     private VaultExpressionResolver resolver;
 
-    @BeforeClass
+    @BeforeAll
     public static void startVault() {
         vault = new VaultContainer<>(DockerImageName.parse("hashicorp/vault:1.21"))
                 .withVaultToken(VAULT_TOKEN)
@@ -63,7 +62,7 @@ public class VaultExpressionResolverIntegrationTestCase extends SubsystemTestCas
         vault.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopVault() {
         if (vault != null) {
             vault.stop();
@@ -90,12 +89,12 @@ public class VaultExpressionResolverIntegrationTestCase extends SubsystemTestCas
                 + "</subsystem>";
     }
 
-    @Before
+    @BeforeEach
     public void bootKernel() throws Exception {
         kernelServices = createKernelServicesBuilder(createAdditionalInitialization())
                 .setSubsystemXml(getSubsystemXml())
                 .build();
-        assertTrue("Subsystem boot failed: " + kernelServices.getBootError(), kernelServices.isSuccessfulBoot());
+        assertTrue(kernelServices.isSuccessfulBoot(), "Subsystem boot failed: " + kernelServices.getBootError());
         kernelServices.getContainer().awaitStability();
         resolver = new VaultExpressionResolver();
     }
@@ -109,7 +108,7 @@ public class VaultExpressionResolverIntegrationTestCase extends SubsystemTestCas
         addAlias.get("alias").set(alias);
         addAlias.get("secret-value").set(secretValue);
         ModelNode addResult = kernelServices.executeOperation(addAlias);
-        assertEquals("add-alias should succeed: " + addResult, SUCCESS, addResult.get(OUTCOME).asString());
+        assertEquals(SUCCESS, addResult.get(OUTCOME).asString(), "add-alias should succeed: " + addResult);
 
         String expression = "${HC_VAULT::" + CREDENTIAL_STORE_NAME + ":" + alias + "}";
         OperationContext ctx = mockContextRuntime(kernelServices.getContainer());
@@ -126,7 +125,7 @@ public class VaultExpressionResolverIntegrationTestCase extends SubsystemTestCas
         ExpressionResolver.ExpressionResolutionUserException e = assertThrows(
                 ExpressionResolver.ExpressionResolutionUserException.class,
                 () -> resolver.resolveExpression(expression, ctx));
-        assertTrue("Message should mention not found or alias", e.getMessage().contains("not found"));
+        assertTrue(e.getMessage().contains("not found"), "Message should mention not found or alias");
     }
 
     @Test
@@ -137,8 +136,8 @@ public class VaultExpressionResolverIntegrationTestCase extends SubsystemTestCas
         ExpressionResolver.ExpressionResolutionUserException e = assertThrows(
                 ExpressionResolver.ExpressionResolutionUserException.class,
                 () -> resolver.resolveExpression(expression, ctx));
-        assertTrue("Message should mention not installed or not available",
-                e.getMessage().contains("not installed") || e.getMessage().contains("not available"));
+        assertTrue(e.getMessage().contains("not installed") || e.getMessage().contains("not available"),
+                "Message should mention not installed or not available");
     }
 
     /**

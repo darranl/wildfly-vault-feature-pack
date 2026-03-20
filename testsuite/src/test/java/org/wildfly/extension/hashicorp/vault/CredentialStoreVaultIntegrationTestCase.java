@@ -7,10 +7,10 @@ package org.wildfly.extension.hashicorp.vault;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OUTCOME;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.RESULT;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SUCCESS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.util.List;
@@ -23,17 +23,17 @@ import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.operations.common.Util;
 import org.jboss.as.subsystem.test.KernelServices;
 import org.jboss.dmr.ModelNode;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.vault.VaultContainer;
 
 /**
  * Credential store integration tests
  */
-public class CredentialStoreVaultIntegrationTestCase extends SubsystemTestCase {
+public class CredentialStoreVaultIntegrationTestCase extends SubsystemJUnit5TestCase {
 
     private static final String VAULT_TOKEN = "myroot";
     private static final String CREDENTIAL_STORE_NAME = "vault-store";
@@ -45,7 +45,7 @@ public class CredentialStoreVaultIntegrationTestCase extends SubsystemTestCase {
 
     private KernelServices kernelServices;
 
-    @BeforeClass
+    @BeforeAll
     public static void startVault() {
         vault = new VaultContainer<>(DockerImageName.parse("hashicorp/vault:1.13"))
                 .withVaultToken(VAULT_TOKEN)
@@ -58,7 +58,7 @@ public class CredentialStoreVaultIntegrationTestCase extends SubsystemTestCase {
         vault.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopVault() {
         if (vault != null) {
             vault.stop();
@@ -89,12 +89,12 @@ public class CredentialStoreVaultIntegrationTestCase extends SubsystemTestCase {
                 + "</subsystem>";
     }
 
-    @Before
+    @BeforeEach
     public void bootKernel() throws Exception {
         kernelServices = createKernelServicesBuilder(createAdditionalInitialization())
                 .setSubsystemXml(getSubsystemXml())
                 .build();
-        assertTrue("Subsystem boot failed: " + kernelServices.getBootError(), kernelServices.isSuccessfulBoot());
+        assertTrue(kernelServices.isSuccessfulBoot(), "Subsystem boot failed: " + kernelServices.getBootError());
         kernelServices.getContainer().awaitStability();
     }
 
@@ -108,25 +108,25 @@ public class CredentialStoreVaultIntegrationTestCase extends SubsystemTestCase {
         add.get("credential-reference", "clear-text").set(VAULT_TOKEN);
 
         ModelNode result = kernelServices.executeOperation(add);
-        assertEquals("Add credential-store should succeed: " + result, SUCCESS, result.get(OUTCOME).asString());
+        assertEquals(SUCCESS, result.get(OUTCOME).asString(), "Add credential-store should succeed: " + result);
 
         kernelServices.getContainer().awaitStability();
 
         ModelNode readAliases = Util.createOperation("read-aliases", newStoreAddress);
         ModelNode readResult = kernelServices.executeOperation(readAliases);
-        assertEquals("read-aliases on added store should succeed: " + readResult, SUCCESS, readResult.get(OUTCOME).asString());
+        assertEquals(SUCCESS, readResult.get(OUTCOME).asString(), "read-aliases on added store should succeed: " + readResult);
         assertNotNull(readResult.get(RESULT).asList());
 
         ModelNode remove = Util.createRemoveOperation(newStoreAddress);
         ModelNode removeResult = kernelServices.executeOperation(remove);
-        assertEquals("Remove added credential-store should succeed: " + removeResult, SUCCESS, removeResult.get(OUTCOME).asString());
+        assertEquals(SUCCESS, removeResult.get(OUTCOME).asString(), "Remove added credential-store should succeed: " + removeResult);
     }
 
     @Test
     public void testReadAliasesSucceeds() throws Exception {
         ModelNode op = Util.createOperation("read-aliases", CREDENTIAL_STORE_ADDRESS);
         ModelNode result = kernelServices.executeOperation(op);
-        assertEquals("read-aliases should succeed: " + result, SUCCESS, result.get(OUTCOME).asString());
+        assertEquals(SUCCESS, result.get(OUTCOME).asString(), "read-aliases should succeed: " + result);
         List<ModelNode> aliases = result.get(RESULT).asList();
         assertNotNull(aliases);
     }
@@ -140,26 +140,26 @@ public class CredentialStoreVaultIntegrationTestCase extends SubsystemTestCase {
         addAlias.get("alias").set(alias);
         addAlias.get("secret-value").set(secretValue);
         ModelNode addResult = kernelServices.executeOperation(addAlias);
-        assertEquals("add-alias should succeed: " + addResult, SUCCESS, addResult.get(OUTCOME).asString());
+        assertEquals(SUCCESS, addResult.get(OUTCOME).asString(), "add-alias should succeed: " + addResult);
 
         ModelNode readAliases = Util.createOperation("read-aliases", CREDENTIAL_STORE_ADDRESS);
         readAliases.get("path").set("secret");
         readAliases.get("recursive").set(true);
         ModelNode readResult = kernelServices.executeOperation(readAliases);
-        assertEquals("read-aliases should succeed: " + readResult, SUCCESS, readResult.get(OUTCOME).asString());
+        assertEquals(SUCCESS, readResult.get(OUTCOME).asString(), "read-aliases should succeed: " + readResult);
         List<ModelNode> aliasList = readResult.get(RESULT).asList();
         assertNotNull(aliasList);
-        assertTrue("Expected alias " + alias + " in " + aliasList, aliasList.stream().anyMatch(n -> alias.equals(n.asString())));
+        assertTrue(aliasList.stream().anyMatch(n -> alias.equals(n.asString())), "Expected alias " + alias + " in " + aliasList);
 
         ModelNode removeAlias = Util.createOperation("remove-alias", CREDENTIAL_STORE_ADDRESS);
         removeAlias.get("alias").set(alias);
         ModelNode removeResult = kernelServices.executeOperation(removeAlias);
-        assertEquals("remove-alias should succeed: " + removeResult, SUCCESS, removeResult.get(OUTCOME).asString());
+        assertEquals(SUCCESS, removeResult.get(OUTCOME).asString(), "remove-alias should succeed: " + removeResult);
 
         ModelNode readAfter = kernelServices.executeOperation(readAliases);
-        assertEquals("read-aliases after remove should succeed: " + readAfter, SUCCESS, readAfter.get(OUTCOME).asString());
+        assertEquals(SUCCESS, readAfter.get(OUTCOME).asString(), "read-aliases after remove should succeed: " + readAfter);
         List<ModelNode> afterList = readAfter.get(RESULT).asList();
-        assertFalse("Expected alias to be removed", afterList != null && afterList.stream().anyMatch(n -> alias.equals(n.asString())));
+        assertFalse(afterList != null && afterList.stream().anyMatch(n -> alias.equals(n.asString())), "Expected alias to be removed");
     }
 
     @Test
@@ -175,25 +175,25 @@ public class CredentialStoreVaultIntegrationTestCase extends SubsystemTestCase {
             add.get("alias").set(alias);
             add.get("secret-value").set("value-" + alias);
             ModelNode r = kernelServices.executeOperation(add);
-            assertEquals("add-alias " + alias + " should succeed: " + r, SUCCESS, r.get(OUTCOME).asString());
+            assertEquals(SUCCESS, r.get(OUTCOME).asString(), "add-alias " + alias + " should succeed: " + r);
         }
 
         ModelNode readResult = kernelServices.executeOperation(readAliases);
-        assertEquals("read-aliases should succeed: " + readResult, SUCCESS, readResult.get(OUTCOME).asString());
+        assertEquals(SUCCESS, readResult.get(OUTCOME).asString(), "read-aliases should succeed: " + readResult);
         List<ModelNode> list = readResult.get(RESULT).asList();
         assertNotNull(list);
-        assertTrue("Expected " + alias1, list.stream().anyMatch(n -> alias1.equals(n.asString())));
-        assertTrue("Expected " + alias2, list.stream().anyMatch(n -> alias2.equals(n.asString())));
+        assertTrue(list.stream().anyMatch(n -> alias1.equals(n.asString())), "Expected " + alias1);
+        assertTrue(list.stream().anyMatch(n -> alias2.equals(n.asString())), "Expected " + alias2);
 
         for (String alias : new String[] { alias1, alias2 }) {
             ModelNode remove = Util.createOperation("remove-alias", CREDENTIAL_STORE_ADDRESS);
             remove.get("alias").set(alias);
             ModelNode r = kernelServices.executeOperation(remove);
-            assertEquals("remove-alias " + alias + " should succeed: " + r, SUCCESS, r.get(OUTCOME).asString());
+            assertEquals(SUCCESS, r.get(OUTCOME).asString(), "remove-alias " + alias + " should succeed: " + r);
         }
 
         List<ModelNode> afterList = kernelServices.executeOperation(readAliases).get(RESULT).asList();
-        assertFalse("Expected alias1 removed", afterList != null && afterList.stream().anyMatch(n -> alias1.equals(n.asString())));
-        assertFalse("Expected alias2 removed", afterList != null && afterList.stream().anyMatch(n -> alias2.equals(n.asString())));
+        assertFalse(afterList != null && afterList.stream().anyMatch(n -> alias1.equals(n.asString())), "Expected alias1 removed");
+        assertFalse(afterList != null && afterList.stream().anyMatch(n -> alias2.equals(n.asString())), "Expected alias2 removed");
     }
 }

@@ -4,47 +4,26 @@ on:
     branches:
       - main
 jobs:
-#  build:
-#    runs-on: ${{ matrix.os }}
-#    strategy:
-#      matrix:
-#        os: [ubuntu-latest]
-#        java: ['17', '21']
-#    steps:
-#      - uses: actions/checkout@v2
-#      - name: Set up JDK ${{ matrix.java }}
-#        uses: actions/setup-java@v4
-#        with:
-#          java-version: ${{ matrix.java }}
-#          distribution: 'temurin'
-#      - name: Version Info
-#        run: mvn -version
-#      - name: Maven Version
-#        run: mvn --version
-#      - name: Build with Maven
-#        run: mvn -B install --file pom.xml
-
-  build-with-latest-wildfly:
-    name: Build and test with latest WildFly
+  build:
+    name: Build and test (JDK ${{ matrix.java }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: ['17', '21']
     steps:
-      - name: Checkout wildfly-vault-feature-pack
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
+      - uses: actions/checkout@v4
+      - name: Set up JDK ${{ matrix.java }}
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: ${{ matrix.java }}
           distribution: 'temurin'
           cache: 'maven'
-
       - name: Checkout WildFly
         uses: actions/checkout@v4
         with:
           repository: wildfly/wildfly
           ref: main
           path: wildfly
-
       - name: Cache WildFly build
         uses: actions/cache@v4
         id: wildfly-cache
@@ -54,21 +33,16 @@ jobs:
             wildfly/dist/target
             ~/.m2/repository/org/wildfly
             ~/.m2/repository/org/jboss
-          key: wildfly-${{ hashFiles('wildfly/pom.xml') }}
-
+          key: wildfly-${{ hashFiles('wildfly/pom.xml') }}-jdk${{ matrix.java }}
       - name: Build WildFly
         if: steps.wildfly-cache.outputs.cache-hit != 'true'
         run: |
           cd wildfly
           mvn -B install -DskipTests
-
       - name: Get WildFly version
         id: wildfly-version
         run: |
           VERSION=$(mvn -q help:evaluate -Dexpression=project.version -DforceStdout -f wildfly/pom.xml)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Using WildFly version: $VERSION"
-
-      - name: Build and test wildfly-vault-feature-pack with latest WildFly
-        run: |
-          mvn -B install -Dversion.org.wildfly=${{ steps.wildfly-version.outputs.version }}
+      - name: Build and test
+        run: mvn -B install -Dversion.org.wildfly=${{ steps.wildfly-version.outputs.version }}
