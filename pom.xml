@@ -70,6 +70,7 @@
         <version.org.jsoup.jsoup>1.15.3</version.org.jsoup.jsoup>
         <version.org.testcontainers>2.0.2</version.org.testcontainers>
         <version.shrinkwrap.resolvers>3.1.4</version.shrinkwrap.resolvers>
+        <version.org.jboss.shrinkwrap>1.2.6</version.org.jboss.shrinkwrap>
         <version.org.wildfly.test>${version.org.wildfly}</version.org.wildfly.test>
 
         <!-- Nexus Settings -->
@@ -153,7 +154,7 @@
             <dependency>
                 <groupId>org.wildfly.security.hashicorp.vault</groupId>
                 <artifactId>wildfly-elytron-hashicorp-vault</artifactId>
-                <version>1.0.0.Alpha3</version>
+                <version>${version.wildfly.elytron.hashicorp.vault}</version>
             </dependency>
 
             <dependency>
