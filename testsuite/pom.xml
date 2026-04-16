@@ -27,6 +27,7 @@
 
         <version.org.jboss.arquillian>1.9.5.Final</version.org.jboss.arquillian>
         <version.org.wildfly.arquillian>5.0.1.Final</version.org.wildfly.arquillian>
+        <version.jakarta.servlet-api>6.0.0</version.jakarta.servlet-api>
         <surefire.memory.args>-Xmx512m -XX:MetaspaceSize=128m</surefire.memory.args>
         <surefire.jpda.args>-agentlib:jdwp=transport=dt_socket,address=*:${as.debug.port},server=y,suspend=y</surefire.jpda.args>
         <as.debug.port>8787</as.debug.port>
@@ -168,7 +169,7 @@
         <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
-            <version>6.0.0</version>
+            <version>${version.jakarta.servlet-api}</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

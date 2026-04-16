@@ -207,7 +207,7 @@ public class HashiCorpVaultCrudIntegrationTestCase {
     /**
      * Stores a secret via the management API, then verifies a deployed servlet can retrieve it at runtime
      * through the credential store service. This validates that secrets stored in Vault are accessible
-     * from deployed applications — the core user scenario.
+     * from deployed applications.
      */
     @Test
     public void testSecretAccessibleFromDeployedApplication(@ArquillianResource ManagementClient managementClient) throws Exception {
