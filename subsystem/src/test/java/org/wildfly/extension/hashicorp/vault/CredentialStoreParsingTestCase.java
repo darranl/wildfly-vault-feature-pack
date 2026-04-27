@@ -15,16 +15,16 @@ public class CredentialStoreParsingTestCase extends SubsystemTestCase {
 
     @Override
     protected String getSubsystemXml() throws IOException {
-        return readResource("hashicorp-vault-community-1.0.xml");
+        return readResource("hashicorp-vault-1.0.xml");
     }
 
     @Test
     public void testParseAndMarshalModel_EmptySubsystem() throws Exception {
-        standardSubsystemTest("hashicorp-vault-community-1.0.xml");
+        standardSubsystemTest("hashicorp-vault-1.0.xml");
     }
 
     @Test
     public void testParseAndMarshalModel_CredentialStore_Full() throws Exception {
-        standardSubsystemTest("hashicorp-vault-community-1.0-full.xml");
+        standardSubsystemTest("hashicorp-vault-1.0-full.xml");
     }
 }

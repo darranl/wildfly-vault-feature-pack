@@ -19,22 +19,22 @@ import java.io.IOException;
 public class SubsystemTestCase extends AbstractSubsystemBaseTest {
 
     public SubsystemTestCase() {
-        super(SUBSYSTEM_NAME, new VaultExtension(), Stability.COMMUNITY);
+        super(SUBSYSTEM_NAME, new VaultExtension(), Stability.DEFAULT);
     }
 
     @Override
     protected AdditionalInitialization createAdditionalInitialization() {
-        return new AdditionalInitialization.ManagementAdditionalInitialization(Stability.COMMUNITY);
+        return new AdditionalInitialization.ManagementAdditionalInitialization(Stability.DEFAULT);
     }
 
     @Override
     protected String getSubsystemXml() throws IOException {
-        return readResource("hashicorp-vault-community-1.0.xml");
+        return readResource("hashicorp-vault-1.0.xml");
     }
 
     @Override
     protected String getSubsystemXsdPath() throws Exception {
-        return "schema/hashicorp-vault_community_1_0.xsd";
+        return "schema/hashicorp-vault_1_0.xsd";
     }
 
 }

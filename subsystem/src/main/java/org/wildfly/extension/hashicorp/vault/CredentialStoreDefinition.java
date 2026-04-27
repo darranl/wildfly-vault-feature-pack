@@ -91,7 +91,7 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
                     .setAllowExpression(true)
                     .setXmlName(HOST_ADDRESS)
                     .setFlags(AttributeAccess.Flag.RESTART_ALL_SERVICES)
-                    .setStability(Stability.COMMUNITY)
+                    .setStability(Stability.DEFAULT)
                     .build();
 
     protected static final SimpleAttributeDefinition NAMESPACE_DEF =
@@ -100,7 +100,7 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
                     .setAllowExpression(true)
                     .setXmlName(NAMESPACE)
                     .setFlags(AttributeAccess.Flag.RESTART_ALL_SERVICES)
-                    .setStability(Stability.COMMUNITY)
+                    .setStability(Stability.DEFAULT)
                     .build();
 
     protected static final SimpleAttributeDefinition AUTHENTICATION_CONTEXT_DEF =
@@ -109,7 +109,7 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
                     .setAllowExpression(true)
                     .setXmlName(AUTHENTICATION_CONTEXT)
                     .setFlags(AttributeAccess.Flag.RESTART_ALL_SERVICES)
-                    .setStability(Stability.COMMUNITY)
+                    .setStability(Stability.DEFAULT)
                     .setCapabilityReference(AUTHENTICATION_CONTEXT_CAPABILITY)
                     .build();
 
@@ -121,7 +121,7 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
             CredentialReference.getAttributeBuilder("credential-reference", "credential-reference", true)
                     .setFlags(AttributeAccess.Flag.RESTART_ALL_SERVICES)
                     .setCapabilityReference(CREDENTIAL_STORE_CAPABILITY, CREDENTIAL_STORE_RUNTIME_CAPABILITY)
-                    .setStability(Stability.COMMUNITY)
+                    .setStability(Stability.DEFAULT)
                     .setRequired(false)
                     .build();
 
@@ -135,50 +135,50 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
 
     static final SimpleAttributeDefinition ALIAS = new SimpleAttributeDefinitionBuilder("alias", ModelType.STRING, false)
             .setMinSize(1)
-            .setStability(Stability.COMMUNITY)
+            .setStability(Stability.DEFAULT)
             .build();
 
     static final SimpleAttributeDefinition SECRET_VALUE = new SimpleAttributeDefinitionBuilder("secret-value", ModelType.STRING, false)
             .setMinSize(0)
-            .setStability(Stability.COMMUNITY)
+            .setStability(Stability.DEFAULT)
             .build();
 
     static final SimpleAttributeDefinition PATH = new SimpleAttributeDefinitionBuilder("path", ModelType.STRING, true)
-            .setStability(Stability.COMMUNITY)
+            .setStability(Stability.DEFAULT)
             .build();
 
     static final SimpleAttributeDefinition RECURSIVE = new SimpleAttributeDefinitionBuilder("recursive", ModelType.BOOLEAN, true)
             .setDefaultValue(ModelNode.FALSE)
-            .setStability(Stability.COMMUNITY)
+            .setStability(Stability.DEFAULT)
             .build();
 
     static final SimpleAttributeDefinition RECURSIVE_DEPTH = new SimpleAttributeDefinitionBuilder("recursive-depth", ModelType.INT, true)
             .setDefaultValue(new ModelNode(100))
-            .setStability(Stability.COMMUNITY)
+            .setStability(Stability.DEFAULT)
             .build();
 
     static final SimpleAttributeDefinition MAX_NUMBER_OF_ALIASES = new SimpleAttributeDefinitionBuilder("max-number-of-aliases", ModelType.INT, true)
             .setDefaultValue(new ModelNode(10000))
-            .setStability(Stability.COMMUNITY)
+            .setStability(Stability.DEFAULT)
             .build();
 
     private static final SimpleOperationDefinition READ_ALIASES = new SimpleOperationDefinitionBuilder("read-aliases", OPERATION_RESOLVER)
             .setParameters(PATH, RECURSIVE, RECURSIVE_DEPTH, MAX_NUMBER_OF_ALIASES)
             .setRuntimeOnly()
             .setReadOnly()
-            .setStability(Stability.COMMUNITY)
+            .setStability(Stability.DEFAULT)
             .build();
 
     private static final SimpleOperationDefinition ADD_ALIAS = new SimpleOperationDefinitionBuilder("add-alias", OPERATION_RESOLVER)
             .setParameters(ALIAS, SECRET_VALUE)
             .setRuntimeOnly()
-            .setStability(Stability.COMMUNITY)
+            .setStability(Stability.DEFAULT)
             .build();
 
     private static final SimpleOperationDefinition REMOVE_ALIAS = new SimpleOperationDefinitionBuilder("remove-alias", OPERATION_RESOLVER)
             .setParameters(ALIAS)
             .setRuntimeOnly()
-            .setStability(Stability.COMMUNITY)
+            .setStability(Stability.DEFAULT)
             .build();
 
     public CredentialStoreDefinition() {
@@ -192,7 +192,7 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
 
     @Override
     public Stability getStability() {
-        return Stability.COMMUNITY;
+        return Stability.DEFAULT;
     }
 
     @Override
