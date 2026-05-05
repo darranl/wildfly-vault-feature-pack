@@ -68,6 +68,31 @@ mvn test -Djdk.test.version=21 -Djdk.test.vendor=semeru
 
 Toolchains are activated only when `jdk.test.version` is set. If `jdk.test.vendor` is not specified, it defaults to `temurin`.
 
+
+### Testing with all Java versions
+
+To run tests against all supported Java versions (17, 21, 25) in a single command:
+
+```bash
+mvn clean install -Ptest-all-versions
+```
+
+This profile runs tests sequentially with each Java version and creates separate test report directories:
+- `target/surefire-reports-java17-temurin/`
+- `target/surefire-reports-java21-temurin/`
+- `target/surefire-reports-java25-temurin/`
+
+You can specify a different JDK distribution:
+
+```bash
+mvn clean install -Ptest-all-versions -Djdk.test.vendor=semeru
+```
+
+This is useful for:
+- Pre-flight checks before pushing to a PR
+- Comprehensive validation after fixing version-specific bugs
+- Local verification before tagging a release
+
 ## Usage
 
 After building, you can provision a WildFly server with the HashiCorp Vault feature pack using Galleon:
