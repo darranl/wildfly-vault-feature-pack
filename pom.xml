@@ -8,7 +8,7 @@
     <parent>
         <groupId>org.jboss</groupId>
         <artifactId>jboss-parent</artifactId>
-        <version>50</version>
+        <version>52</version>
     </parent>
 
     <groupId>org.wildfly.security.vault</groupId>
@@ -32,11 +32,9 @@
     </licenses>
 
     <properties>
-        <!-- Require Java 17 -->
-        <required.java.build.version>[17,)</required.java.build.version>
-        <required.java.deploy.version>[17,18)</required.java.deploy.version>
-        <maven.compiler.target>17</maven.compiler.target>
-        <maven.compiler.source>17</maven.compiler.source>
+        <!-- Require Java 25 for build, target Java 17 bytecode -->
+        <jdk.min.version>25</jdk.min.version>
+        <required.java.build.version>[25,)</required.java.build.version>
         <maven.compiler.release>17</maven.compiler.release>
 
         <module.name>org.wildfly.extension.hashicorp-vault</module.name>
