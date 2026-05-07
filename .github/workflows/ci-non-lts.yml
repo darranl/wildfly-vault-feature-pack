@@ -1,0 +1,184 @@
+name: CI - Non-LTS Testing (Java 26+)
+
+# This workflow tests with non-LTS Java versions to prepare for the next LTS release.
+# It can be easily disabled by:
+# 1. Commenting out the 'schedule' trigger below
+# 2. Disabling the workflow in GitHub Actions UI
+# 3. Deleting this file temporarily
+
+on:
+  schedule:
+    # Run weekly on Sundays at 3 AM UTC
+    - cron: '0 3 * * 0'
+  workflow_dispatch: # Allow manual triggering
+    inputs:
+      java_version:
+        description: 'Java version to test (e.g., 26, 27)'
+        required: false
+        default: '26'
+
+jobs:
+  build-and-test-non-lts:
+    name: Build and Test - Java ${{ github.event.inputs.java_version || '26' }} - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    
+    steps:
+      # 1. Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      # 2. Install Java 25 for building (required build version)
+      - name: Set up JDK 25 (Temurin) for building
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '25'
+          cache: 'maven'
+      
+      - name: Capture JDK 25 Temurin path
+        shell: bash
+        run: echo "JAVA_HOME_25_TEMURIN=$JAVA_HOME" >> $GITHUB_ENV
+      
+      # 3. Install non-LTS Java versions for testing
+      - name: Set up JDK ${{ github.event.inputs.java_version || '26' }} (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ github.event.inputs.java_version || '26' }}
+      
+      - name: Capture non-LTS JDK Temurin path
+        shell: bash
+        run: echo "JAVA_HOME_NONLTS_TEMURIN=$JAVA_HOME" >> $GITHUB_ENV
+      
+      - name: Set up JDK ${{ github.event.inputs.java_version || '26' }} (Semeru)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'semeru'
+          java-version: ${{ github.event.inputs.java_version || '26' }}
+      
+      - name: Capture non-LTS JDK Semeru path
+        shell: bash
+        run: echo "JAVA_HOME_NONLTS_SEMERU=$JAVA_HOME" >> $GITHUB_ENV
+      
+      # 4. Generate toolchains.xml for non-LTS testing
+      - name: Generate toolchains.xml
+        shell: bash
+        run: |
+          mkdir -p ~/.m2
+          JAVA_VERSION="${{ github.event.inputs.java_version || '26' }}"
+          cat > ~/.m2/toolchains.xml << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <toolchains xmlns="http://maven.apache.org/TOOLCHAINS/1.1.0"
+                      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                      xsi:schemaLocation="http://maven.apache.org/TOOLCHAINS/1.1.0
+                                          http://maven.apache.org/xsd/toolchains-1.1.0.xsd">
+            <toolchain>
+              <type>jdk</type>
+              <provides>
+                <version>${JAVA_VERSION}</version>
+                <vendor>temurin</vendor>
+              </provides>
+              <configuration>
+                <jdkHome>${JAVA_HOME_NONLTS_TEMURIN}</jdkHome>
+              </configuration>
+            </toolchain>
+            <toolchain>
+              <type>jdk</type>
+              <provides>
+                <version>${JAVA_VERSION}</version>
+                <vendor>semeru</vendor>
+              </provides>
+              <configuration>
+                <jdkHome>${JAVA_HOME_NONLTS_SEMERU}</jdkHome>
+              </configuration>
+            </toolchain>
+          </toolchains>
+          EOF
+      
+      # 5. Build once with Java 25 and install artifacts
+      - name: Build with Java 25 and install artifacts
+        shell: bash
+        run: |
+          export JAVA_HOME="${JAVA_HOME_25_TEMURIN}"
+          mvn -version
+          mvn clean install -DskipTests -B -V
+      
+      # 6. Run tests with non-LTS Java (Temurin)
+      - name: Test with Java ${{ github.event.inputs.java_version || '26' }} (Temurin)
+        id: test-nonlts-temurin
+        shell: bash
+        run: |
+          JAVA_VERSION="${{ github.event.inputs.java_version || '26' }}"
+          mvn test -Djdk.test.version=${JAVA_VERSION} -Djdk.test.vendor=temurin -B
+        continue-on-error: true
+      
+      - name: Publish test results - Java ${{ github.event.inputs.java_version || '26' }} (Temurin) - ${{ matrix.os }}
+        if: always() && matrix.os == 'ubuntu-latest'
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: '**/target/surefire-reports/TEST-*.xml'
+          check_name: 'Test Results - Java ${{ github.event.inputs.java_version || '26' }} (Temurin) - ${{ matrix.os }}'
+          comment_mode: off
+      
+      - name: Upload test results - Java ${{ github.event.inputs.java_version || '26' }} (Temurin) - ${{ matrix.os }}
+        if: failure() && steps.test-nonlts-temurin.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-java${{ github.event.inputs.java_version || '26' }}-temurin-${{ matrix.os }}
+          path: '**/target/surefire-reports/**'
+          retention-days: 30
+      
+      # 7. Run tests with non-LTS Java (Semeru)
+      - name: Test with Java ${{ github.event.inputs.java_version || '26' }} (Semeru)
+        id: test-nonlts-semeru
+        shell: bash
+        run: |
+          JAVA_VERSION="${{ github.event.inputs.java_version || '26' }}"
+          mvn test -Djdk.test.version=${JAVA_VERSION} -Djdk.test.vendor=semeru -B
+        continue-on-error: true
+      
+      - name: Publish test results - Java ${{ github.event.inputs.java_version || '26' }} (Semeru) - ${{ matrix.os }}
+        if: always() && matrix.os == 'ubuntu-latest'
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: '**/target/surefire-reports/TEST-*.xml'
+          check_name: 'Test Results - Java ${{ github.event.inputs.java_version || '26' }} (Semeru) - ${{ matrix.os }}'
+          comment_mode: off
+      
+      - name: Upload test results - Java ${{ github.event.inputs.java_version || '26' }} (Semeru) - ${{ matrix.os }}
+        if: failure() && steps.test-nonlts-semeru.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-java${{ github.event.inputs.java_version || '26' }}-semeru-${{ matrix.os }}
+          path: '**/target/surefire-reports/**'
+          retention-days: 30
+      
+      # 8. Check test results - fail job if any test permutation failed
+      - name: Check test results
+        if: always()
+        shell: bash
+        run: |
+          echo "Checking test results for non-LTS Java ${{ github.event.inputs.java_version || '26' }}..."
+          FAILED=0
+          
+          if [ "${{ steps.test-nonlts-temurin.outcome }}" != "success" ]; then
+            echo "❌ Java ${{ github.event.inputs.java_version || '26' }} (Temurin) tests failed"
+            FAILED=1
+          fi
+          
+          if [ "${{ steps.test-nonlts-semeru.outcome }}" != "success" ]; then
+            echo "❌ Java ${{ github.event.inputs.java_version || '26' }} (Semeru) tests failed"
+            FAILED=1
+          fi
+          
+          if [ $FAILED -eq 1 ]; then
+            echo "::error::One or more test permutations failed"
+            exit 1
+          fi
+          
+          echo "✅ All test permutations passed"
