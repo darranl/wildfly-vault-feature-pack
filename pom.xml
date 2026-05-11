@@ -8,7 +8,7 @@
     <parent>
         <groupId>org.jboss</groupId>
         <artifactId>jboss-parent</artifactId>
-        <version>50</version>
+        <version>52</version>
     </parent>
 
     <groupId>org.wildfly.security.vault</groupId>
@@ -32,11 +32,9 @@
     </licenses>
 
     <properties>
-        <!-- Require Java 17 -->
-        <required.java.build.version>[17,)</required.java.build.version>
-        <required.java.deploy.version>[17,18)</required.java.deploy.version>
-        <maven.compiler.target>17</maven.compiler.target>
-        <maven.compiler.source>17</maven.compiler.source>
+        <!-- Require Java 25 for build, target Java 17 bytecode -->
+        <jdk.min.version>25</jdk.min.version>
+        <required.java.build.version>[25,)</required.java.build.version>
         <maven.compiler.release>17</maven.compiler.release>
 
         <module.name>org.wildfly.extension.hashicorp-vault</module.name>
@@ -71,6 +69,7 @@
         <version.org.testcontainers>2.0.2</version.org.testcontainers>
         <version.shrinkwrap.resolvers>3.1.4</version.shrinkwrap.resolvers>
         <version.org.jboss.shrinkwrap>1.2.6</version.org.jboss.shrinkwrap>
+        <version.org.wildfly.launcher>1.0.3.Final</version.org.wildfly.launcher>
         <version.org.wildfly.test>${version.org.wildfly}</version.org.wildfly.test>
 
         <!-- Nexus Settings -->
@@ -272,6 +271,97 @@
             </plugins>
         </pluginManagement>
     </build>
+    <profiles>
+        <profile>
+            <id>test-with-toolchain</id>
+            <activation>
+                <property>
+                    <name>jdk.test.version</name>
+                </property>
+            </activation>
+            <properties>
+                <jdk.test.vendor>temurin</jdk.test.vendor>
+            </properties>
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-surefire-plugin</artifactId>
+                            <configuration>
+                                <jdkToolchain>
+                                    <version>${jdk.test.version}</version>
+                                    <vendor>${jdk.test.vendor}</vendor>
+                                </jdkToolchain>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+            </build>
+        </profile>
+        <profile>
+            <id>test-all-versions</id>
+            <properties>
+                <!-- Default to Temurin if not specified -->
+                <jdk.test.vendor>temurin</jdk.test.vendor>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <executions>
+                            <!-- Test with Java 17 -->
+                            <execution>
+                                <id>test-java-17</id>
+                                <goals>
+                                    <goal>test</goal>
+                                </goals>
+                                <configuration>
+                                    <jdkToolchain>
+                                        <version>17</version>
+                                        <vendor>${jdk.test.vendor}</vendor>
+                                    </jdkToolchain>
+                                    <reportsDirectory>${project.build.directory}/surefire-reports-java17-${jdk.test.vendor}</reportsDirectory>
+                                </configuration>
+                            </execution>
+                            
+                            <!-- Test with Java 21 -->
+                            <execution>
+                                <id>test-java-21</id>
+                                <goals>
+                                    <goal>test</goal>
+                                </goals>
+                                <configuration>
+                                    <jdkToolchain>
+                                        <version>21</version>
+                                        <vendor>${jdk.test.vendor}</vendor>
+                                    </jdkToolchain>
+                                    <reportsDirectory>${project.build.directory}/surefire-reports-java21-${jdk.test.vendor}</reportsDirectory>
+                                </configuration>
+                            </execution>
+                            
+                            <!-- Test with Java 25 -->
+                            <execution>
+                                <id>test-java-25</id>
+                                <goals>
+                                    <goal>test</goal>
+                                </goals>
+                                <configuration>
+                                    <jdkToolchain>
+                                        <version>25</version>
+                                        <vendor>${jdk.test.vendor}</vendor>
+                                    </jdkToolchain>
+                                    <reportsDirectory>${project.build.directory}/surefire-reports-java25-${jdk.test.vendor}</reportsDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
     <repositories>
         <repository>
             <releases>
