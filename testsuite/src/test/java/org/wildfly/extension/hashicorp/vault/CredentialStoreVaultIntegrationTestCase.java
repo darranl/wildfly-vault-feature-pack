@@ -76,12 +76,12 @@ public class CredentialStoreVaultIntegrationTestCase extends SubsystemJUnit5Test
     }
 
     /**
-     * COMMUNITY stability so credential-store resource is registered; NORMAL running mode so
+     * DEFAULT stability so credential-store resource is registered; NORMAL running mode so
      * performRuntime is invoked when adding/removing credential-stores (required for services to start).
      */
     @Override
     protected AdditionalInitialization createAdditionalInitialization() {
-        return new AdditionalInitialization.ManagementAdditionalInitialization(Stability.COMMUNITY) {
+        return new AdditionalInitialization.ManagementAdditionalInitialization(Stability.DEFAULT) {
             @Override
             protected RunningMode getRunningMode() {
                 return RunningMode.NORMAL;
@@ -93,7 +93,7 @@ public class CredentialStoreVaultIntegrationTestCase extends SubsystemJUnit5Test
     protected String getSubsystemXml() throws IOException {
         ensureVaultStarted();
         String hostAddress = vault.getHttpHostAddress();
-        return "<subsystem xmlns=\"urn:wildfly:hashicorp-vault:community:1.0\">\n"
+        return "<subsystem xmlns=\"urn:wildfly:hashicorp-vault:1.0\">\n"
                 + "    <credential-store name=\"" + CREDENTIAL_STORE_NAME + "\" host-address=\"" + hostAddress + "\">\n"
                 + "        <credential-reference clear-text=\"" + VAULT_TOKEN + "\"/>\n"
                 + "    </credential-store>\n"
