@@ -96,9 +96,9 @@
     </developers>
 
     <scm>
-        <connection>scm:git:git@github.com:wildfly-security-incubator/wildfly-vault-feature-pack.git</connection>
-        <developerConnection>scm:git:git@github.com:wildfly-security-incubator/wildfly-vault-feature-pack</developerConnection>
-        <url>https://github.com/wildfly-security-incubator/wildfly-vault-feature-pack</url>
+        <connection>scm:git:git@github.com:wildfly-security/wildfly-vault-feature-pack.git</connection>
+        <developerConnection>scm:git:git@github.com:wildfly-security/wildfly-vault-feature-pack</developerConnection>
+        <url>https://github.com/wildfly-security/wildfly-vault-feature-pack</url>
         <tag>HEAD</tag>
     </scm>
 
