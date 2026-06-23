@@ -128,7 +128,8 @@ public class HashiCorpVaultCrudIntegrationTestCase {
      */
     @Test
     public void testFullCrudLifecycle(@ArquillianResource ManagementClient managementClient) throws IOException {
-        String alias = "secret/crud.lifecycle_secret";
+        String alias = "crud?lifecycle_secret";
+        String normalizedAlias = "#" + alias;  // read-aliases returns normalized format: #secretPath?key
         String secretValue = "test-lifecycle-value-123";
 
         ModelNode addAlias = Util.createOperation(OP_ADD_ALIAS, CREDENTIAL_STORE_ADDRESS);
@@ -138,14 +139,14 @@ public class HashiCorpVaultCrudIntegrationTestCase {
         assertEquals(SUCCESS, addResult.get(OUTCOME).asString(), "add-alias should succeed: " + addResult);
 
         ModelNode readAliases = Util.createOperation(OP_READ_ALIASES, CREDENTIAL_STORE_ADDRESS);
-        readAliases.get(ATTR_PATH).set("secret");
+        readAliases.get(ATTR_PATH).set("");  // Empty path = list all aliases
         readAliases.get(ATTR_RECURSIVE).set(true);
         ModelNode readResult = executeOperation(managementClient, readAliases);
         assertEquals(SUCCESS, readResult.get(OUTCOME).asString(), "read-aliases should succeed: " + readResult);
         List<ModelNode> aliases = readResult.get(RESULT).asList();
         assertNotNull(aliases, "Alias list should not be null");
-        assertTrue(aliases.stream().anyMatch(n -> alias.equals(n.asString())),
-                "Expected alias '" + alias + "' to be present after add, got: " + aliases);
+        assertTrue(aliases.stream().anyMatch(n -> normalizedAlias.equals(n.asString())),
+                "Expected alias '" + normalizedAlias + "' to be present after add, got: " + aliases);
 
         ModelNode removeAlias = Util.createOperation(OP_REMOVE_ALIAS, CREDENTIAL_STORE_ADDRESS);
         removeAlias.get(ATTR_ALIAS).set(alias);
@@ -155,7 +156,7 @@ public class HashiCorpVaultCrudIntegrationTestCase {
         ModelNode readAfter = executeOperation(managementClient, readAliases);
         assertEquals(SUCCESS, readAfter.get(OUTCOME).asString(), "read-aliases after remove should succeed: " + readAfter);
         List<ModelNode> afterList = readAfter.get(RESULT).asList();
-        assertFalse(afterList != null && afterList.stream().anyMatch(n -> alias.equals(n.asString())),
+        assertFalse(afterList != null && afterList.stream().anyMatch(n -> normalizedAlias.equals(n.asString())),
                 "Alias should no longer be present after removal");
     }
 
@@ -164,8 +165,10 @@ public class HashiCorpVaultCrudIntegrationTestCase {
      */
     @Test
     public void testAddMultipleAliasesAndListThem(@ArquillianResource ManagementClient managementClient) throws IOException {
-        String alias1 = "secret/crud.multi_one";
-        String alias2 = "secret/crud.multi_two";
+        String alias1 = "crud?multi_one";
+        String alias2 = "crud?multi_two";
+        String normalizedAlias1 = "#" + alias1;  // read-aliases returns normalized format: #secretPath?key
+        String normalizedAlias2 = "#" + alias2;
 
         for (String alias : new String[] { alias1, alias2 }) {
             ModelNode add = Util.createOperation(OP_ADD_ALIAS, CREDENTIAL_STORE_ADDRESS);
@@ -176,14 +179,14 @@ public class HashiCorpVaultCrudIntegrationTestCase {
         }
 
         ModelNode readAliases = Util.createOperation(OP_READ_ALIASES, CREDENTIAL_STORE_ADDRESS);
-        readAliases.get(ATTR_PATH).set("secret");
+        readAliases.get(ATTR_PATH).set("");  // Empty path = list all aliases
         readAliases.get(ATTR_RECURSIVE).set(true);
         ModelNode readResult = executeOperation(managementClient, readAliases);
         assertEquals(SUCCESS, readResult.get(OUTCOME).asString(), "read-aliases should succeed: " + readResult);
         List<ModelNode> list = readResult.get(RESULT).asList();
         assertNotNull(list);
-        assertTrue(list.stream().anyMatch(n -> alias1.equals(n.asString())), "Expected " + alias1);
-        assertTrue(list.stream().anyMatch(n -> alias2.equals(n.asString())), "Expected " + alias2);
+        assertTrue(list.stream().anyMatch(n -> normalizedAlias1.equals(n.asString())), "Expected " + normalizedAlias1);
+        assertTrue(list.stream().anyMatch(n -> normalizedAlias2.equals(n.asString())), "Expected " + normalizedAlias2);
 
         for (String alias : new String[] { alias1, alias2 }) {
             ModelNode remove = Util.createOperation(OP_REMOVE_ALIAS, CREDENTIAL_STORE_ADDRESS);
@@ -194,9 +197,9 @@ public class HashiCorpVaultCrudIntegrationTestCase {
 
         ModelNode afterRead = executeOperation(managementClient, readAliases);
         List<ModelNode> afterList = afterRead.get(RESULT).asList();
-        assertFalse(afterList != null && afterList.stream().anyMatch(n -> alias1.equals(n.asString())),
+        assertFalse(afterList != null && afterList.stream().anyMatch(n -> normalizedAlias1.equals(n.asString())),
                 "Expected alias1 removed");
-        assertFalse(afterList != null && afterList.stream().anyMatch(n -> alias2.equals(n.asString())),
+        assertFalse(afterList != null && afterList.stream().anyMatch(n -> normalizedAlias2.equals(n.asString())),
                 "Expected alias2 removed");
     }
 
@@ -211,7 +214,7 @@ public class HashiCorpVaultCrudIntegrationTestCase {
      */
     @Test
     public void testSecretAccessibleFromDeployedApplication(@ArquillianResource ManagementClient managementClient) throws Exception {
-        String alias = "secret/crud.servlet_test";
+        String alias = "crud?servlet_test";
         String secretValue = "servlet-accessed-secret-42";
 
         ModelNode addAlias = Util.createOperation(OP_ADD_ALIAS, CREDENTIAL_STORE_ADDRESS);
@@ -243,7 +246,7 @@ public class HashiCorpVaultCrudIntegrationTestCase {
     @Test
     public void testDeployedApplicationReturnsNotFoundForMissingAlias(@ArquillianResource ManagementClient managementClient) throws Exception {
         URI servletUri = URI.create("http://127.0.0.1:8080/vault-crud-test/vault-secret"
-                + "?store=" + CREDENTIAL_STORE_NAME + "&alias=secret/crud.nonexistent_alias");
+                + "?store=" + CREDENTIAL_STORE_NAME + "&alias=crud?nonexistent_alias");
         HttpResponse<String> response = HttpClient.newHttpClient()
                 .send(HttpRequest.newBuilder(servletUri).GET().build(), HttpResponse.BodyHandlers.ofString());
 
@@ -262,7 +265,7 @@ public class HashiCorpVaultCrudIntegrationTestCase {
      */
     @Test
     public void testResolveExpressionDoesNotLeakSecret(@ArquillianResource ManagementClient managementClient) throws IOException {
-        String alias = "secret/crud.leak_test";
+        String alias = "crud?leak_test";
         String secretValue = "must-not-leak";
 
         ModelNode addAlias = Util.createOperation(OP_ADD_ALIAS, CREDENTIAL_STORE_ADDRESS);
@@ -298,7 +301,7 @@ public class HashiCorpVaultCrudIntegrationTestCase {
      */
     @Test
     public void testAddDuplicateAliasFails(@ArquillianResource ManagementClient managementClient) throws IOException {
-        String alias = "secret/crud.duplicate_test";
+        String alias = "crud?duplicate_test";
 
         ModelNode add1 = Util.createOperation(OP_ADD_ALIAS, CREDENTIAL_STORE_ADDRESS);
         add1.get(ATTR_ALIAS).set(alias);
@@ -329,7 +332,7 @@ public class HashiCorpVaultCrudIntegrationTestCase {
     @Test
     public void testRemoveNonExistentAliasFails(@ArquillianResource ManagementClient managementClient) throws IOException {
         ModelNode removeAlias = Util.createOperation(OP_REMOVE_ALIAS, CREDENTIAL_STORE_ADDRESS);
-        removeAlias.get(ATTR_ALIAS).set("secret/crud.no_such_key");
+        removeAlias.get(ATTR_ALIAS).set("crud?no_such_key");
         ModelNode result = executeOperation(managementClient, removeAlias);
         assertEquals("failed", result.get(OUTCOME).asString(),
                 "Remove of non-existent alias should fail: " + result);
@@ -343,7 +346,7 @@ public class HashiCorpVaultCrudIntegrationTestCase {
     @Test
     public void testAddAliasWithoutSecretValueFails(@ArquillianResource ManagementClient managementClient) throws IOException {
         ModelNode addAlias = Util.createOperation(OP_ADD_ALIAS, CREDENTIAL_STORE_ADDRESS);
-        addAlias.get(ATTR_ALIAS).set("secret/crud.no_secret");
+        addAlias.get(ATTR_ALIAS).set("crud?no_secret");
         // Deliberately omit secret-value
         ModelNode result = executeOperation(managementClient, addAlias);
         assertEquals("failed", result.get(OUTCOME).asString(),

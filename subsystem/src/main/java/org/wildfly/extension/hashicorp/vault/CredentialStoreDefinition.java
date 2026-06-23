@@ -144,6 +144,7 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
             .build();
 
     static final SimpleAttributeDefinition PATH = new SimpleAttributeDefinitionBuilder("path", ModelType.STRING, true)
+            .setMinSize(0)  // Allow empty string to list all aliases
             .setStability(Stability.DEFAULT)
             .build();
 
@@ -374,20 +375,21 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
             ModelNode pathNode = PATH.resolveModelAttribute(context, operation);
             String path = pathNode.asStringOrNull();
 
+            // "#" means root of the default mount in the new alias format
             if (path == null || path.trim().isEmpty()) {
-                aliases = credentialStore.getAliases();
-            } else {
-                boolean recursive = RECURSIVE.resolveModelAttribute(context, operation).asBooleanOrNull();
-                int recursiveDepth = recursive ? RECURSIVE_DEPTH.resolveModelAttribute(context, operation).asIntOrNull() : 0;
-                int maxNumberOfAliases = MAX_NUMBER_OF_ALIASES.resolveModelAttribute(context, operation).asIntOrNull();
-
-                List<Class<? extends CredentialStoreExtension>> supportedTypes = credentialStore.getSupportedExtensionTypes();
-                if (!supportedTypes.contains(HashicorpVaultCredentialStoreExtension.class)) {
-                    throw HashiCorpVaultLogger.ROOT_LOGGER.vaultCredentialStoreExtensionNotSupported();
-                }
-                HashicorpVaultCredentialStoreExtension hccse = credentialStore.getExtensionInstance(HashicorpVaultCredentialStoreExtension.class);
-                aliases = hccse.getAliases(path, recursive, recursiveDepth, maxNumberOfAliases);
+                path = "#";
             }
+
+            boolean recursive = RECURSIVE.resolveModelAttribute(context, operation).asBooleanOrNull();
+            int recursiveDepth = recursive ? RECURSIVE_DEPTH.resolveModelAttribute(context, operation).asIntOrNull() : 0;
+            int maxNumberOfAliases = MAX_NUMBER_OF_ALIASES.resolveModelAttribute(context, operation).asIntOrNull();
+
+            List<Class<? extends CredentialStoreExtension>> supportedTypes = credentialStore.getSupportedExtensionTypes();
+            if (!supportedTypes.contains(HashicorpVaultCredentialStoreExtension.class)) {
+                throw HashiCorpVaultLogger.ROOT_LOGGER.vaultCredentialStoreExtensionNotSupported();
+            }
+            HashicorpVaultCredentialStoreExtension hccse = credentialStore.getExtensionInstance(HashicorpVaultCredentialStoreExtension.class);
+            aliases = hccse.getAliases(path, recursive, recursiveDepth, maxNumberOfAliases);
 
             List<ModelNode> list = new ArrayList<>();
             for (String alias : aliases) {

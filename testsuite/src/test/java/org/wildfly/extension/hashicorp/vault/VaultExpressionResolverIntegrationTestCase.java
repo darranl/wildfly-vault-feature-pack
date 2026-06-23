@@ -111,7 +111,7 @@ public class VaultExpressionResolverIntegrationTestCase extends SubsystemJUnit5T
 
     @Test
     public void resolveExpressionReturnsStoredSecret() {
-        String alias = "secret/integration.resolver_test";
+        String alias = "integration?resolver_test";
         String secretValue = "resolved-secret-value";
 
         ModelNode addAlias = Util.createOperation("add-alias", CREDENTIAL_STORE_ADDRESS);
@@ -129,7 +129,7 @@ public class VaultExpressionResolverIntegrationTestCase extends SubsystemJUnit5T
 
     @Test
     public void resolveExpressionThrowsWhenAliasNotFound() {
-        String expression = "${HC_VAULT::" + CREDENTIAL_STORE_NAME + ":secret/nonexistent.missing}";
+        String expression = "${HC_VAULT::" + CREDENTIAL_STORE_NAME + ":nonexistent?missing}";
         OperationContext ctx = mockContextRuntime(kernelServices.getContainer());
 
         ExpressionResolver.ExpressionResolutionUserException e = assertThrows(
@@ -140,7 +140,7 @@ public class VaultExpressionResolverIntegrationTestCase extends SubsystemJUnit5T
 
     @Test
     public void resolveExpressionThrowsWhenStoreNotInstalled() {
-        String expression = "${HC_VAULT::no-such-store:secret/some.key}";
+        String expression = "${HC_VAULT::no-such-store:some?key}";
         OperationContext ctx = mockContextRuntime(kernelServices.getContainer());
 
         ExpressionResolver.ExpressionResolutionUserException e = assertThrows(
