@@ -108,22 +108,24 @@ public class HashiCorpVaultHttpsMutualTlsAuthenticationContextIntegrationTestCas
         add.get("authentication-context").set(NAMES.authenticationContext);
         VaultHttpsElytronSetup.executeSuccess(managementClient, add);
 
+        String alias = "certtest?password";
+        String normalizedAlias = "#" + alias;  // read-aliases returns normalized format: #secretPath?key
         ModelNode addAlias = Util.createOperation("add-alias", storeAddress);
-        addAlias.get("alias").set("secret/certtest.password");
+        addAlias.get("alias").set(alias);
         addAlias.get("secret-value").set("s3cr3t");
         VaultHttpsElytronSetup.executeSuccess(managementClient, addAlias);
 
         ModelNode readAliases = Util.createOperation("read-aliases", storeAddress);
-        readAliases.get("path").set("secret/certtest");
+        readAliases.get("path").set("");  // Empty path = list all aliases
         readAliases.get("recursive").set(true);
         ModelNode readResult = managementClient.getControllerClient().execute(readAliases);
         assertEquals(SUCCESS, readResult.get(OUTCOME).asString(), "read-aliases should succeed: " + readResult);
         List<ModelNode> aliases = readResult.get(RESULT).asList();
-        assertTrue(aliases.stream().anyMatch(n -> "secret/certtest.password".equals(n.asString())),
-                "Expected alias 'secret/certtest.password' in read-aliases result, got: " + aliases);
+        assertTrue(aliases.stream().anyMatch(n -> normalizedAlias.equals(n.asString())),
+                "Expected alias '" + normalizedAlias + "' in read-aliases result, got: " + aliases);
 
         ModelNode removeAlias = Util.createOperation("remove-alias", storeAddress);
-        removeAlias.get("alias").set("secret/certtest.password");
+        removeAlias.get("alias").set(alias);  // Use the new format alias
         VaultHttpsElytronSetup.executeSuccess(managementClient, removeAlias);
 
         ModelNode remove = Util.createRemoveOperation(storeAddress);
@@ -135,7 +137,9 @@ public class HashiCorpVaultHttpsMutualTlsAuthenticationContextIntegrationTestCas
      * Credential store without token and without cert auth enabled on Vault.
      * The client certificate is presented at the TLS level but Vault has no {@code cert} auth method,
      * so all login strategies fail.
-     * <p><b>Passes when:</b> the credential store add operation fails.
+     * <p>The credential store add succeeds because Vault connections are created lazily.
+     * Authentication failure is detected on the first operation that contacts Vault.
+     * <p><b>Passes when:</b> the first vault operation after add fails with "All login strategies failed".
      */
     @Test
     public void testCredentialStoreWithoutTokenFailsWhenCertAuthNotEnabled(@ArquillianResource ManagementClient managementClient) throws Exception {
@@ -148,9 +152,16 @@ public class HashiCorpVaultHttpsMutualTlsAuthenticationContextIntegrationTestCas
             add.get("host-address").set(VAULT.composeHttpsHostAddress());
             add.get("authentication-context").set(NAMES.authenticationContext);
 
-            ModelNode response = managementClient.getControllerClient().execute(add);
+            ModelNode addResponse = managementClient.getControllerClient().execute(add);
+            assertEquals(SUCCESS, addResponse.get(OUTCOME).asString(),
+                    "Credential store add should succeed (connections are lazy): " + addResponse);
+
+            ModelNode readAliases = Util.createOperation("read-aliases", storeAddress);
+            readAliases.get("path").set("#");
+            readAliases.get("recursive").set(true);
+            ModelNode response = managementClient.getControllerClient().execute(readAliases);
             assertNotEquals(SUCCESS, response.get(OUTCOME).asString(),
-                    "Credential store add should fail without token and without cert auth enabled on Vault");
+                    "First vault operation should fail without token and without cert auth enabled on Vault");
             assertTrue(response.get(FAILURE_DESCRIPTION).toString().contains("All login strategies failed"),
                     "Expected 'All login strategies failed' in failure description, got: " + response.get(FAILURE_DESCRIPTION));
         } finally {

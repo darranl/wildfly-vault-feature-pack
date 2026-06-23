@@ -117,7 +117,7 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
             .Builder.of(CREDENTIAL_STORE_CAPABILITY, true, CredentialStore.class)
             .build();
 
-    static final ObjectTypeAttributeDefinition CREDENTIAL_REFERENCE = 
+    static final ObjectTypeAttributeDefinition CREDENTIAL_REFERENCE =
             CredentialReference.getAttributeBuilder("credential-reference", "credential-reference", true)
                     .setFlags(AttributeAccess.Flag.RESTART_ALL_SERVICES)
                     .setCapabilityReference(CREDENTIAL_STORE_CAPABILITY, CREDENTIAL_STORE_RUNTIME_CAPABILITY)
@@ -128,9 +128,9 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
     public static final Collection<AttributeDefinition> ATTRIBUTES = List.of(HOST_NAME_DEF, NAMESPACE_DEF,
             AUTHENTICATION_CONTEXT_DEF, CREDENTIAL_REFERENCE);
 
-    static final StandardResourceDescriptionResolver OPERATION_RESOLVER = 
-            new StandardResourceDescriptionResolver("credential-store.operations", 
-                    "org.wildfly.extension.hashicorp.vault.LocalDescriptions", 
+    static final StandardResourceDescriptionResolver OPERATION_RESOLVER =
+            new StandardResourceDescriptionResolver("credential-store.operations",
+                    "org.wildfly.extension.hashicorp.vault.LocalDescriptions",
                     CredentialStoreDefinition.class.getClassLoader());
 
     static final SimpleAttributeDefinition ALIAS = new SimpleAttributeDefinitionBuilder("alias", ModelType.STRING, false)
@@ -144,6 +144,7 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
             .build();
 
     static final SimpleAttributeDefinition PATH = new SimpleAttributeDefinitionBuilder("path", ModelType.STRING, true)
+            .setMinSize(0)  // Allow empty string to list all aliases
             .setStability(Stability.DEFAULT)
             .build();
 
@@ -228,7 +229,7 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
                 HashiCorpVaultLogger.ROOT_LOGGER.credentialReferenceRollbackFailed(e);
             }
         }
-        
+
         @Override
         protected void performRuntime(OperationContext context, ModelNode operation, ModelNode model) throws OperationFailedException {
             final String name = context.getCurrentAddressValue();
@@ -244,6 +245,17 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
             if (namespaceNode.isDefined()) {
                 attributes.put("namespace", namespaceNode.asString());
             }
+
+            // Enable legacy alias format support based on runtime stability level
+            // At COMMUNITY stability or lower: legacy support is enabled (with deprecation warnings)
+            // At DEFAULT stability or higher: legacy support is disabled (new format required)
+            Stability stability = context.getStability();
+            boolean supportLegacyFormat = stability.enables(Stability.COMMUNITY);
+            attributes.put("support-legacy-alias-format", String.valueOf(supportLegacyFormat));
+
+            HashiCorpVaultLogger.ROOT_LOGGER.debugf(
+                "Initializing credential store '%s' with stability=%s, supportLegacyAliasFormat=%s",
+                name, stability, supportLegacyFormat);
 
             SSLContext sslContext = null;
 
@@ -272,9 +284,9 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
             try {
                     ServiceName serviceName = CREDENTIAL_STORE_RUNTIME_CAPABILITY.getCapabilityServiceName(name);
 
-                    ExceptionSupplier<CredentialSource, Exception> credentialSourceSupplier = 
+                    ExceptionSupplier<CredentialSource, Exception> credentialSourceSupplier =
                             CredentialReference.getCredentialSourceSupplier(context, CREDENTIAL_REFERENCE, model, context.getServiceTarget().addService(ServiceName.of("temp", name)));
-                    
+
                     String token = null;
                     if (credentialSourceSupplier != null) {
                         try {
@@ -292,7 +304,7 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
                             throw HashiCorpVaultLogger.ROOT_LOGGER.failedToObtainCredentialFromReference(e);
                         }
                     }
-                    
+
                     CredentialStore.CredentialSourceProtectionParameter protectionParameter;
                     if (token != null) {
                         protectionParameter = new CredentialStore.CredentialSourceProtectionParameter(
@@ -307,7 +319,7 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
                     final Map<String, String> finalAttributes = attributes;
                     final CredentialStore.CredentialSourceProtectionParameter finalProtectionParameter = protectionParameter;
                     final Provider[] finalProviders = new Provider[]{WildFlyElytronPasswordProvider.getInstance()};
-                    
+
                     // Use the legacy addService pattern which supports ServiceController.getService()
                     // This is required for Elytron's credential-reference to work cross-subsystem
                 SSLContext finalSslContext = sslContext;
@@ -328,9 +340,9 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
                     if (credentialSourceSupplier != null) {
                         CredentialReference.getCredentialSourceSupplier(context, CREDENTIAL_REFERENCE, model, serviceBuilder);
                     }
-                    
+
                     serviceBuilder.install();
-                
+
             } catch (CredentialStoreException e) {
                 throw HashiCorpVaultLogger.ROOT_LOGGER.failedToInitializeHashiCorpVaultCredentialStore(e.getMessage(), e);
             } catch (Exception e) {
@@ -363,20 +375,21 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
             ModelNode pathNode = PATH.resolveModelAttribute(context, operation);
             String path = pathNode.asStringOrNull();
 
+            // "#" means root of the default mount in the new alias format
             if (path == null || path.trim().isEmpty()) {
-                aliases = credentialStore.getAliases();
-            } else {
-                boolean recursive = RECURSIVE.resolveModelAttribute(context, operation).asBooleanOrNull();
-                int recursiveDepth = recursive ? RECURSIVE_DEPTH.resolveModelAttribute(context, operation).asIntOrNull() : 0;
-                int maxNumberOfAliases = MAX_NUMBER_OF_ALIASES.resolveModelAttribute(context, operation).asIntOrNull();
-
-                List<Class<? extends CredentialStoreExtension>> supportedTypes = credentialStore.getSupportedExtensionTypes();
-                if (!supportedTypes.contains(HashicorpVaultCredentialStoreExtension.class)) {
-                    throw HashiCorpVaultLogger.ROOT_LOGGER.vaultCredentialStoreExtensionNotSupported();
-                }
-                HashicorpVaultCredentialStoreExtension hccse = credentialStore.getExtensionInstance(HashicorpVaultCredentialStoreExtension.class);
-                aliases = hccse.getAliases(path, recursive, recursiveDepth, maxNumberOfAliases);
+                path = "#";
             }
+
+            boolean recursive = RECURSIVE.resolveModelAttribute(context, operation).asBooleanOrNull();
+            int recursiveDepth = recursive ? RECURSIVE_DEPTH.resolveModelAttribute(context, operation).asIntOrNull() : 0;
+            int maxNumberOfAliases = MAX_NUMBER_OF_ALIASES.resolveModelAttribute(context, operation).asIntOrNull();
+
+            List<Class<? extends CredentialStoreExtension>> supportedTypes = credentialStore.getSupportedExtensionTypes();
+            if (!supportedTypes.contains(HashicorpVaultCredentialStoreExtension.class)) {
+                throw HashiCorpVaultLogger.ROOT_LOGGER.vaultCredentialStoreExtensionNotSupported();
+            }
+            HashicorpVaultCredentialStoreExtension hccse = credentialStore.getExtensionInstance(HashicorpVaultCredentialStoreExtension.class);
+            aliases = hccse.getAliases(path, recursive, recursiveDepth, maxNumberOfAliases);
 
             List<ModelNode> list = new ArrayList<>();
             for (String alias : aliases) {
@@ -392,11 +405,11 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
         try {
             String alias = ALIAS.resolveModelAttribute(context, operation).asString();
             String secretValue = SECRET_VALUE.resolveModelAttribute(context, operation).asStringOrNull();
-            
+
             if (credentialStore.exists(alias, PasswordCredential.class)) {
                 throw HashiCorpVaultLogger.ROOT_LOGGER.credentialAliasAlreadyExists(alias);
             }
-            
+
             if (secretValue != null) {
                 PasswordCredential credential = createCredentialFromPassword(secretValue);
                 credentialStore.store(alias, credential);
@@ -414,11 +427,11 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
     private void removeAliasOperation(OperationContext context, ModelNode operation, CredentialStore credentialStore) throws OperationFailedException {
         try {
             String alias = ALIAS.resolveModelAttribute(context, operation).asString();
-            
+
             if (!credentialStore.exists(alias, PasswordCredential.class)) {
                 throw HashiCorpVaultLogger.ROOT_LOGGER.credentialAliasDoesNotExist(alias);
             }
-            
+
             credentialStore.remove(alias, PasswordCredential.class);
             credentialStore.flush();
         } catch (CredentialStoreException e) {
@@ -426,42 +439,42 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
         }
     }
 
-    
+
     private static class RuntimeOperationHandler implements OperationStepHandler {
-        
+
         private final CredentialStoreOperation operation;
-        
+
         RuntimeOperationHandler(CredentialStoreOperation operation) {
             this.operation = operation;
         }
-        
+
         @Override
         public void execute(OperationContext context, ModelNode operation) throws OperationFailedException {
             context.addStep(new OperationStepHandler() {
                 @Override
                 public void execute(OperationContext context, ModelNode operation) throws OperationFailedException {
                     final String name = context.getCurrentAddressValue();
-                    
+
                     // Get the credential store from the service registry
                     ServiceName serviceName = CREDENTIAL_STORE_RUNTIME_CAPABILITY.getCapabilityServiceName(name);
                     ServiceRegistry serviceRegistry = context.getServiceRegistry(false);
                     ServiceController<?> serviceController = serviceRegistry.getService(serviceName);
-                    
+
                     if (serviceController == null) {
                         throw HashiCorpVaultLogger.ROOT_LOGGER.credentialStoreResourceNotFound(name);
                     }
-                    
+
                     CredentialStore credentialStore = (CredentialStore) serviceController.getValue();
                     if (credentialStore == null) {
                         throw HashiCorpVaultLogger.ROOT_LOGGER.credentialStoreResourceNotAvailable(name);
                     }
-                    
+
                     RuntimeOperationHandler.this.operation.execute(context, operation, credentialStore);
                 }
             }, OperationContext.Stage.RUNTIME);
         }
     }
-    
+
     @FunctionalInterface
     private interface CredentialStoreOperation {
         void execute(OperationContext context, ModelNode operation, CredentialStore credentialStore) throws OperationFailedException;

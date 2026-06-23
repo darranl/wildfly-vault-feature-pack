@@ -144,7 +144,8 @@ public class CredentialStoreVaultIntegrationTestCase extends SubsystemJUnit5Test
 
     @Test
     public void testAddAliasReadAliasesRemoveAlias() throws Exception {
-        String alias = "secret/integration.test_secret";
+        String alias = "integration?test_secret";
+        String normalizedAlias = "#" + alias;  // read-aliases returns normalized format: #secretPath?key
         String secretValue = "my-secret-value";
 
         ModelNode addAlias = Util.createOperation("add-alias", CREDENTIAL_STORE_ADDRESS);
@@ -154,13 +155,13 @@ public class CredentialStoreVaultIntegrationTestCase extends SubsystemJUnit5Test
         assertEquals(SUCCESS, addResult.get(OUTCOME).asString(), "add-alias should succeed: " + addResult);
 
         ModelNode readAliases = Util.createOperation("read-aliases", CREDENTIAL_STORE_ADDRESS);
-        readAliases.get("path").set("secret");
+        readAliases.get("path").set("");  // Empty path = list all aliases
         readAliases.get("recursive").set(true);
         ModelNode readResult = kernelServices.executeOperation(readAliases);
         assertEquals(SUCCESS, readResult.get(OUTCOME).asString(), "read-aliases should succeed: " + readResult);
         List<ModelNode> aliasList = readResult.get(RESULT).asList();
         assertNotNull(aliasList);
-        assertTrue(aliasList.stream().anyMatch(n -> alias.equals(n.asString())), "Expected alias " + alias + " in " + aliasList);
+        assertTrue(aliasList.stream().anyMatch(n -> normalizedAlias.equals(n.asString())), "Expected alias " + normalizedAlias + " in " + aliasList);
 
         ModelNode removeAlias = Util.createOperation("remove-alias", CREDENTIAL_STORE_ADDRESS);
         removeAlias.get("alias").set(alias);
@@ -170,15 +171,17 @@ public class CredentialStoreVaultIntegrationTestCase extends SubsystemJUnit5Test
         ModelNode readAfter = kernelServices.executeOperation(readAliases);
         assertEquals(SUCCESS, readAfter.get(OUTCOME).asString(), "read-aliases after remove should succeed: " + readAfter);
         List<ModelNode> afterList = readAfter.get(RESULT).asList();
-        assertFalse(afterList != null && afterList.stream().anyMatch(n -> alias.equals(n.asString())), "Expected alias to be removed");
+        assertFalse(afterList != null && afterList.stream().anyMatch(n -> normalizedAlias.equals(n.asString())), "Expected alias to be removed");
     }
 
     @Test
     public void testAddMultipleAliasesAndListThem() throws Exception {
-        String alias1 = "secret/integration.alias_one";
-        String alias2 = "secret/integration.alias_two";
+        String alias1 = "integration?alias_one";
+        String alias2 = "integration?alias_two";
+        String normalizedAlias1 = "#" + alias1;  // read-aliases returns normalized format: #secretPath?key
+        String normalizedAlias2 = "#" + alias2;
         ModelNode readAliases = Util.createOperation("read-aliases", CREDENTIAL_STORE_ADDRESS);
-        readAliases.get("path").set("secret");
+        readAliases.get("path").set("");  // Empty path = list all aliases
         readAliases.get("recursive").set(true);
 
         for (String alias : new String[] { alias1, alias2 }) {
@@ -193,8 +196,8 @@ public class CredentialStoreVaultIntegrationTestCase extends SubsystemJUnit5Test
         assertEquals(SUCCESS, readResult.get(OUTCOME).asString(), "read-aliases should succeed: " + readResult);
         List<ModelNode> list = readResult.get(RESULT).asList();
         assertNotNull(list);
-        assertTrue(list.stream().anyMatch(n -> alias1.equals(n.asString())), "Expected " + alias1);
-        assertTrue(list.stream().anyMatch(n -> alias2.equals(n.asString())), "Expected " + alias2);
+        assertTrue(list.stream().anyMatch(n -> normalizedAlias1.equals(n.asString())), "Expected " + normalizedAlias1);
+        assertTrue(list.stream().anyMatch(n -> normalizedAlias2.equals(n.asString())), "Expected " + normalizedAlias2);
 
         for (String alias : new String[] { alias1, alias2 }) {
             ModelNode remove = Util.createOperation("remove-alias", CREDENTIAL_STORE_ADDRESS);
@@ -204,8 +207,8 @@ public class CredentialStoreVaultIntegrationTestCase extends SubsystemJUnit5Test
         }
 
         List<ModelNode> afterList = kernelServices.executeOperation(readAliases).get(RESULT).asList();
-        assertFalse(afterList != null && afterList.stream().anyMatch(n -> alias1.equals(n.asString())), "Expected alias1 removed");
-        assertFalse(afterList != null && afterList.stream().anyMatch(n -> alias2.equals(n.asString())), "Expected alias2 removed");
+        assertFalse(afterList != null && afterList.stream().anyMatch(n -> normalizedAlias1.equals(n.asString())), "Expected alias1 removed");
+        assertFalse(afterList != null && afterList.stream().anyMatch(n -> normalizedAlias2.equals(n.asString())), "Expected alias2 removed");
     }
 
     // =====================================================================
@@ -218,7 +221,7 @@ public class CredentialStoreVaultIntegrationTestCase extends SubsystemJUnit5Test
      */
     @Test
     public void testAddAliasThatAlreadyExists() throws Exception {
-        String alias = "secret/duplicate.error_test";
+        String alias = "duplicate?error_test";
 
         ModelNode addAlias = Util.createOperation("add-alias", CREDENTIAL_STORE_ADDRESS);
         addAlias.get("alias").set(alias);
@@ -247,7 +250,7 @@ public class CredentialStoreVaultIntegrationTestCase extends SubsystemJUnit5Test
     @Test
     public void testRemoveAliasThatDoesNotExist() throws Exception {
         ModelNode removeAlias = Util.createOperation("remove-alias", CREDENTIAL_STORE_ADDRESS);
-        removeAlias.get("alias").set("secret/nonexistent.no_such_key");
+        removeAlias.get("alias").set("nonexistent?no_such_key");
         ModelNode result = kernelServices.executeOperation(removeAlias);
         assertEquals("failed", result.get(OUTCOME).asString(), "Remove of non-existent alias should fail: " + result);
         assertTrue(result.get(FAILURE_DESCRIPTION).asString().contains("does not exist"),
@@ -261,7 +264,7 @@ public class CredentialStoreVaultIntegrationTestCase extends SubsystemJUnit5Test
     @Test
     public void testAddAliasWithoutSecretValue() throws Exception {
         ModelNode addAlias = Util.createOperation("add-alias", CREDENTIAL_STORE_ADDRESS);
-        addAlias.get("alias").set("secret/missing.secret_value");
+        addAlias.get("alias").set("missing?secret_value");
         // Deliberately omit secret-value
         ModelNode result = kernelServices.executeOperation(addAlias);
         assertEquals("failed", result.get(OUTCOME).asString(),
