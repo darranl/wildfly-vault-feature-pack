@@ -251,7 +251,7 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
             // At DEFAULT stability or higher: legacy support is disabled (new format required)
             Stability stability = context.getStability();
             boolean supportLegacyFormat = stability.enables(Stability.COMMUNITY);
-            attributes.put("supportLegacyAliasFormat", String.valueOf(supportLegacyFormat));
+            attributes.put("support-legacy-alias-format", String.valueOf(supportLegacyFormat));
 
             HashiCorpVaultLogger.ROOT_LOGGER.debugf(
                 "Initializing credential store '%s' with stability=%s, supportLegacyAliasFormat=%s",
