@@ -32,7 +32,7 @@ public final class VaultExtension implements Extension {
 
     static final PathElement SUBSYSTEM_PATH = PathElement.pathElement(SUBSYSTEM, SUBSYSTEM_NAME);
     //private static final String RESOURCE_NAME = VaultExtension.class.getPackage().getName() + ".LocalDescriptions";
-    
+
     public VaultExtension() {
     }
 
@@ -41,9 +41,10 @@ public final class VaultExtension implements Extension {
      */
     public enum VaultSubsystemModel implements SubsystemModel {
         VERSION_1_0_0(1, 0, 0),
+        VERSION_2_0_0(2, 0, 0),
         ;
 
-        static final VaultSubsystemModel CURRENT = VERSION_1_0_0;
+        static final VaultSubsystemModel CURRENT = VERSION_2_0_0;
 
         private final ModelVersion version;
 
@@ -76,12 +77,12 @@ public final class VaultExtension implements Extension {
         VaultExpressionResolver vaultResolver = new VaultExpressionResolver();
         context.registerExpressionResolverExtension(() -> vaultResolver, VAULT_EXPRESSION_PATTERN, false);
     }
-    
+
     @Override
     public void initializeParsers(org.jboss.as.controller.parsing.ExtensionParsingContext context) {
         context.setSubsystemXmlMappings(SUBSYSTEM_NAME, EnumSet.allOf(VaultSubsystemSchema.class));
     }
-    
+
     public static PathElement createPath(String name) {
         return PathElement.pathElement(name);
     }
