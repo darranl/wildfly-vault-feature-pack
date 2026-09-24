@@ -75,7 +75,7 @@ public final class VaultExpressionResolver implements ExpressionResolverExtensio
 
         CredentialStore credentialStore = getCredentialStore(context, credentialStoreName, expression);
 
-        // retrieve the credential from the resolved hahsicorp vault credential store
+        // retrieve the credential from the resolved hashicorp vault credential store
         PasswordCredential credential;
         try {
             credential = credentialStore.retrieve(alias, PasswordCredential.class);
