@@ -110,11 +110,23 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
                     .setXmlName(AUTHENTICATION_CONTEXT)
                     .setFlags(AttributeAccess.Flag.RESTART_ALL_SERVICES)
                     .setStability(Stability.DEFAULT)
-                    .setCapabilityReference(AUTHENTICATION_CONTEXT_CAPABILITY)
+                    .setCapabilityReference(AUTHENTICATION_CONTEXT_CAPABILITY, CREDENTIAL_STORE_CAPABILITY)
                     .build();
 
     static final RuntimeCapability<Void> CREDENTIAL_STORE_RUNTIME_CAPABILITY =  RuntimeCapability
             .Builder.of(CREDENTIAL_STORE_CAPABILITY, true, CredentialStore.class)
+            .build();
+
+    /**
+     * Subsystem-private capability name. Only HashiCorp Vault credential stores advertise this capability,
+     * which prevents {@link VaultExpressionResolver} from accidentally resolving expressions against
+     * non-Vault credential stores registered under the generic Elytron capability.
+     */
+    static final String HASHICORP_VAULT_CREDENTIAL_STORE_CAPABILITY =
+            "org.wildfly.extension.hashicorp-vault.credential-store";
+
+    static final RuntimeCapability<Void> HASHICORP_VAULT_CREDENTIAL_STORE_RUNTIME_CAPABILITY =
+            RuntimeCapability.Builder.of(HASHICORP_VAULT_CREDENTIAL_STORE_CAPABILITY, true, CredentialStore.class)
             .build();
 
     static final ObjectTypeAttributeDefinition CREDENTIAL_REFERENCE =
@@ -188,7 +200,7 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
                 .setRemoveHandler(REMOVE_HANDLER)
                 .setAddRestartLevel(OperationEntry.Flag.RESTART_RESOURCE_SERVICES)
                 .setRemoveRestartLevel(OperationEntry.Flag.RESTART_RESOURCE_SERVICES)
-                .setCapabilities(CREDENTIAL_STORE_RUNTIME_CAPABILITY));
+                .setCapabilities(CREDENTIAL_STORE_RUNTIME_CAPABILITY, HASHICORP_VAULT_CREDENTIAL_STORE_RUNTIME_CAPABILITY));
     }
 
     @Override
@@ -332,6 +344,14 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
                     // Use the legacy addService with the real service name
                     ServiceBuilder<CredentialStore> serviceBuilder =
                             context.getServiceTarget().addService(serviceName, service);
+
+                    // Also register the service under the subsystem-private capability so that
+                    // VaultExpressionResolver can resolve ${HC_VAULT::...} expressions without
+                    // being able to accidentally target a non-Vault credential store.
+                    // MSC aliases share the same lifecycle as the primary service name: removing
+                    // the primary automatically deregisters all aliases.
+                    ServiceName privateServiceName = HASHICORP_VAULT_CREDENTIAL_STORE_RUNTIME_CAPABILITY.getCapabilityServiceName(name);
+                    serviceBuilder.addAliases(privateServiceName);
 
                     if (authenticationContextServiceName != null) {
                         serviceBuilder.addDependency(authenticationContextServiceName, AuthenticationContext.class, authenticationContextInjector);

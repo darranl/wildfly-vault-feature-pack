@@ -6,7 +6,6 @@ package org.wildfly.extension.hashicorp.vault;
 
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OUTCOME;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SUCCESS;
-import static org.jboss.as.controller.security.CredentialReference.CREDENTIAL_STORE_CAPABILITY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -164,10 +163,10 @@ public class VaultExpressionResolverIntegrationTestCase extends SubsystemJUnit5T
                 if ("getCapabilityServiceName".equals(method.getName()) && args != null && args.length == 3) {
                     String capabilityName = (String) args[0];
                     String dynamicPart = (String) args[1];
-                    if (CREDENTIAL_STORE_CAPABILITY.equals(capabilityName)) {
-                        return CredentialStoreDefinition.CREDENTIAL_STORE_RUNTIME_CAPABILITY.getCapabilityServiceName(dynamicPart);
+                    if (CredentialStoreDefinition.HASHICORP_VAULT_CREDENTIAL_STORE_CAPABILITY.equals(capabilityName)) {
+                        return CredentialStoreDefinition.HASHICORP_VAULT_CREDENTIAL_STORE_RUNTIME_CAPABILITY.getCapabilityServiceName(dynamicPart);
                     }
-                    return ServiceName.of("capability", capabilityName, dynamicPart);
+                    return CredentialStoreDefinition.CREDENTIAL_STORE_RUNTIME_CAPABILITY.getCapabilityServiceName(dynamicPart);
                 }
                 if ("getServiceRegistry".equals(method.getName())) {
                     return container;
