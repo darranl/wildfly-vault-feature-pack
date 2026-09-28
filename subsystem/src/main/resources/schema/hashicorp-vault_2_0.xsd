@@ -49,10 +49,10 @@
                 </xs:documentation>
             </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="authentication-context" type="xs:string" use="optional">
+        <xs:attribute name="client-ssl-context" type="xs:string" use="optional">
             <xs:annotation>
                 <xs:documentation>
-                    The name of authentication-context used to secure connection to the HashiCorp Vault.
+                    The name of the client-ssl-context used to secure the HTTPS connection to HashiCorp Vault.
                 </xs:documentation>
             </xs:annotation>
         </xs:attribute>

@@ -26,9 +26,9 @@
         <credential-reference clear-text="cleartext-token"/>
     </credential-store>
 
-    <credential-store name="minimal-store"
-                      host-address="http://localhost:8200"
-                      authentication-context="vault-tls-context">
+    <credential-store name="tls-vault"
+                      host-address="https://vault.tls.com:8200"
+                      client-ssl-context="vault-tls-context">
         <credential-reference clear-text="test-token"/>
     </credential-store>
 </subsystem>

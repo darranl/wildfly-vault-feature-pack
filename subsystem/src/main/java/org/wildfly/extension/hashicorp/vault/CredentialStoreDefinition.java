@@ -51,10 +51,6 @@ import org.wildfly.security.password.interfaces.ClearPassword;
 import org.wildfly.security.password.spec.ClearPasswordSpec;
 
 import java.io.IOException;
-import java.net.URI;
-import java.security.AccessController;
-import java.security.GeneralSecurityException;
-import java.security.PrivilegedAction;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.security.spec.InvalidKeySpecException;
@@ -67,9 +63,6 @@ import java.util.Set;
 
 import javax.net.ssl.SSLContext;
 
-import org.wildfly.security.auth.client.AuthenticationContext;
-import org.wildfly.security.auth.client.AuthenticationContextConfigurationClient;
-
 import static org.jboss.as.controller.security.CredentialReference.CREDENTIAL_STORE_CAPABILITY;
 
 /**
@@ -80,10 +73,10 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
 
     static final String HOST_ADDRESS = "host-address";
     static final String NAMESPACE = "namespace";
-    static final String AUTHENTICATION_CONTEXT = "authentication-context";
+    static final String CLIENT_SSL_CONTEXT = "client-ssl-context";
 
-    /** Elytron capability name for authentication-context (used for TLS / client certs). */
-    private static final String AUTHENTICATION_CONTEXT_CAPABILITY = "org.wildfly.security.authentication-context";
+    /** Elytron capability name for client-ssl-context (used for outbound TLS). */
+    private static final String CLIENT_SSL_CONTEXT_CAPABILITY = "org.wildfly.security.client-ssl-context";
 
     protected static final SimpleAttributeDefinition HOST_NAME_DEF =
             new SimpleAttributeDefinitionBuilder(HOST_ADDRESS, ModelType.STRING)
@@ -103,14 +96,24 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
                     .setStability(Stability.DEFAULT)
                     .build();
 
-    protected static final SimpleAttributeDefinition AUTHENTICATION_CONTEXT_DEF =
-            new SimpleAttributeDefinitionBuilder(AUTHENTICATION_CONTEXT, ModelType.STRING)
+    /**
+     * Dummy attribute definition used only by the legacy schema parsers to recognise and reject
+     * the old 'authentication-context' XML attribute with a helpful error message.
+     * This attribute is NOT registered in the management model.
+     */
+    static final SimpleAttributeDefinition AUTHENTICATION_CONTEXT_LEGACY_DEF =
+            new SimpleAttributeDefinitionBuilder("authentication-context", ModelType.STRING)
                     .setRequired(false)
-                    .setAllowExpression(true)
-                    .setXmlName(AUTHENTICATION_CONTEXT)
+                    .build();
+
+    protected static final SimpleAttributeDefinition CLIENT_SSL_CONTEXT_DEF =
+            new SimpleAttributeDefinitionBuilder(CLIENT_SSL_CONTEXT, ModelType.STRING)
+                    .setRequired(false)
+                    .setAllowExpression(false)
+                    .setXmlName(CLIENT_SSL_CONTEXT)
                     .setFlags(AttributeAccess.Flag.RESTART_ALL_SERVICES)
                     .setStability(Stability.DEFAULT)
-                    .setCapabilityReference(AUTHENTICATION_CONTEXT_CAPABILITY, CREDENTIAL_STORE_CAPABILITY)
+                    .setCapabilityReference(CLIENT_SSL_CONTEXT_CAPABILITY, CREDENTIAL_STORE_CAPABILITY)
                     .build();
 
     static final RuntimeCapability<Void> CREDENTIAL_STORE_RUNTIME_CAPABILITY =  RuntimeCapability
@@ -138,7 +141,7 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
                     .build();
 
     public static final Collection<AttributeDefinition> ATTRIBUTES = List.of(HOST_NAME_DEF, NAMESPACE_DEF,
-            AUTHENTICATION_CONTEXT_DEF, CREDENTIAL_REFERENCE);
+            CLIENT_SSL_CONTEXT_DEF, CREDENTIAL_REFERENCE);
 
     static final StandardResourceDescriptionResolver OPERATION_RESOLVER =
             new StandardResourceDescriptionResolver("credential-store.operations",
@@ -248,7 +251,7 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
 
             final ModelNode hostnameNode = HOST_NAME_DEF.resolveModelAttribute(context, model);
             final ModelNode namespaceNode = NAMESPACE_DEF.resolveModelAttribute(context, model);
-            final ModelNode authenticationContextNode = AUTHENTICATION_CONTEXT_DEF.resolveModelAttribute(context, model);
+            final ModelNode clientSslContextNode = CLIENT_SSL_CONTEXT_DEF.resolveModelAttribute(context, model);
 
             Map<String, String> attributes = new HashMap<>();
             if (hostnameNode.isDefined()) {
@@ -271,25 +274,13 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
 
             SSLContext sslContext = null;
 
-            ServiceName authenticationContextServiceName = null;
-            if (authenticationContextNode.isDefined()) {
-                String authenticationContextName = authenticationContextNode.asString();
-                String acCapability = RuntimeCapability.buildDynamicCapabilityName(AUTHENTICATION_CONTEXT_CAPABILITY, authenticationContextName);
-                authenticationContextServiceName = context.getCapabilityServiceName(acCapability, AuthenticationContext.class);
-                ServiceController<AuthenticationContext> authenticationContextServiceController = (ServiceController<AuthenticationContext>) context.getServiceRegistry(false).getService(authenticationContextServiceName);
-                if (authenticationContextServiceController == null) {
-                    throw HashiCorpVaultLogger.ROOT_LOGGER.authenticationContextNotFound(authenticationContextName);
-                }
-                AuthenticationContext authenticationContext = authenticationContextServiceController.getValue();
-                if (authenticationContext == null) {
-                    throw HashiCorpVaultLogger.ROOT_LOGGER.authenticationContextNotAvailable(authenticationContextName);
-                }
-                try {
-                    URI vaultUri = URI.create(hostnameNode.asString());
-                    AuthenticationContextConfigurationClient authenticationContextConfigurationClient = AccessController.doPrivileged((PrivilegedAction<AuthenticationContextConfigurationClient>) AuthenticationContextConfigurationClient.ACTION);
-                    sslContext = authenticationContextConfigurationClient.getSSLContext(vaultUri, authenticationContext);
-                } catch (GeneralSecurityException e) {
-                    throw HashiCorpVaultLogger.ROOT_LOGGER.sslContextFromAuthenticationContextFailed(authenticationContextName, e);
+            if (clientSslContextNode.isDefined()) {
+                String clientSslContextName = clientSslContextNode.asString();
+                String sslCapability = RuntimeCapability.buildDynamicCapabilityName(CLIENT_SSL_CONTEXT_CAPABILITY, clientSslContextName);
+                ServiceName clientSslContextServiceName = context.getCapabilityServiceName(sslCapability, SSLContext.class);
+                ServiceController<SSLContext> sslContextServiceController = (ServiceController<SSLContext>) context.getServiceRegistry(false).getService(clientSslContextServiceName);
+                if (sslContextServiceController != null) {
+                    sslContext = sslContextServiceController.getValue();
                 }
             }
 
@@ -334,12 +325,10 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
 
                     // Use the legacy addService pattern which supports ServiceController.getService()
                     // This is required for Elytron's credential-reference to work cross-subsystem
-                SSLContext finalSslContext = sslContext;
-                CredentialStoreService service = new CredentialStoreService(() ->
-                        new CredentialStoreService.InitializationParams(finalAttributes, finalProtectionParameter, finalSslContext, finalProviders)
+                    SSLContext finalSslContext = sslContext;
+                    CredentialStoreService service = new CredentialStoreService(() ->
+                            new CredentialStoreService.InitializationParams(finalAttributes, finalProtectionParameter, finalSslContext, finalProviders)
                     );
-
-                    final InjectedValue<AuthenticationContext> authenticationContextInjector = new InjectedValue<>();
 
                     // Use the legacy addService with the real service name
                     ServiceBuilder<CredentialStore> serviceBuilder =
@@ -353,9 +342,6 @@ public class CredentialStoreDefinition extends SimpleResourceDefinition {
                     ServiceName privateServiceName = HASHICORP_VAULT_CREDENTIAL_STORE_RUNTIME_CAPABILITY.getCapabilityServiceName(name);
                     serviceBuilder.addAliases(privateServiceName);
 
-                    if (authenticationContextServiceName != null) {
-                        serviceBuilder.addDependency(authenticationContextServiceName, AuthenticationContext.class, authenticationContextInjector);
-                    }
                     // Re-register the credential-reference dependencies on the real service builder
                     if (credentialSourceSupplier != null) {
                         CredentialReference.getCredentialSourceSupplier(context, CREDENTIAL_REFERENCE, model, serviceBuilder);
