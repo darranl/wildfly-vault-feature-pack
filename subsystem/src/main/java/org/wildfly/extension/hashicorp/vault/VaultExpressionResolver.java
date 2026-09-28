@@ -5,8 +5,8 @@
 
 package org.wildfly.extension.hashicorp.vault;
 
-import static org.jboss.as.controller.security.CredentialReference.CREDENTIAL_STORE_CAPABILITY;
 import static org.wildfly.common.Assert.checkNotNullParam;
+import static org.wildfly.extension.hashicorp.vault.CredentialStoreDefinition.HASHICORP_VAULT_CREDENTIAL_STORE_CAPABILITY;
 
 import org.wildfly.extension.hashicorp.vault._private.HashiCorpVaultLogger;
 
@@ -75,7 +75,7 @@ public final class VaultExpressionResolver implements ExpressionResolverExtensio
 
         CredentialStore credentialStore = getCredentialStore(context, credentialStoreName, expression);
 
-        // retrieve the credential from the resolved hahsicorp vault credential store
+        // retrieve the credential from the resolved hashicorp vault credential store
         PasswordCredential credential;
         try {
             credential = credentialStore.retrieve(alias, PasswordCredential.class);
@@ -95,7 +95,7 @@ public final class VaultExpressionResolver implements ExpressionResolverExtensio
     private static CredentialStore getCredentialStore(OperationContext context, String credentialStoreName, String expression) {
         CredentialStore credentialStore;
         try {
-            ServiceName serviceName = context.getCapabilityServiceName(CREDENTIAL_STORE_CAPABILITY, credentialStoreName, CredentialStore.class);
+            ServiceName serviceName = context.getCapabilityServiceName(HASHICORP_VAULT_CREDENTIAL_STORE_CAPABILITY, credentialStoreName, CredentialStore.class);
             ServiceRegistry registry = context.getServiceRegistry(false);
             if (registry == null) {
                 throw new ExpressionResolver.ExpressionResolutionServerException(

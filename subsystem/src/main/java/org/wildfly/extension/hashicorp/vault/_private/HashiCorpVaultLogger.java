@@ -131,4 +131,5 @@ public interface HashiCorpVaultLogger extends BasicLogger {
 
     @Message(id = 32, value = "Credential for alias '%s' in credential store '%s' is not of a type clear password")
     String credentialNotClearPassword(String alias, String credentialStoreName);
+
 }
