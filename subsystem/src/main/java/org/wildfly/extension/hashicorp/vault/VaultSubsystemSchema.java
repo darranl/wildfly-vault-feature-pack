@@ -25,9 +25,10 @@ import org.jboss.staxmapper.IntVersion;
 public enum VaultSubsystemSchema implements PersistentSubsystemSchema<VaultSubsystemSchema> {
     VERSION_1_0(1),
     VERSION_1_0_COMMUNITY(1, Stability.COMMUNITY),
+    VERSION_2_0(2),
     ;
 
-    static final Map<Stability, VaultSubsystemSchema> CURRENT = Feature.map(EnumSet.of(VERSION_1_0));
+    static final Map<Stability, VaultSubsystemSchema> CURRENT = Feature.map(EnumSet.of(VERSION_2_0));
 
     private final VersionedNamespace<IntVersion, VaultSubsystemSchema> namespace;
 
