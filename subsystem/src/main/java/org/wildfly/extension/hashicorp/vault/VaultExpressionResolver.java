@@ -100,9 +100,10 @@ public final class VaultExpressionResolver implements ExpressionResolverExtensio
             return doohickey.apply(context);
         } catch (ExpressionResolver.ExpressionResolutionUserException | ExpressionResolver.ExpressionResolutionServerException e) {
             throw e;
-        } catch (IllegalArgumentException e) {
-            // getCapabilityRuntimeAPI throws IllegalArgumentException when the capability is not registered,
-            // which means the named credential store does not exist.
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            // getCapabilityRuntimeAPI throws IllegalStateException when the capability is unknown/not registered,
+            // and IllegalArgumentException if the capability exists but does not expose a runtime API or is not dynamic.
+            // In either case, the requested vault credential store is not available.
             throw new ExpressionResolver.ExpressionResolutionUserException(
                     HashiCorpVaultLogger.ROOT_LOGGER.credentialStoreNotAvailableDetail(credentialStoreName, e.getMessage()), e);
         } catch (OperationFailedException e) {

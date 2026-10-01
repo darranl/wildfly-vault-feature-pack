@@ -181,7 +181,7 @@ public class NonVaultStoreRejectionIntegrationTestCase extends SubsystemJUnit5Te
      * The key assertion: the resolver must reject {@code file-store} because no doohickey
      * (credential-store API capability) is registered for that name — only the vault-backed
      * {@code vault-store} has one. The resolver converts the missing capability to an
-     * {@link ExpressionResolver.ExpressionResolutionUserException} (WFLYHCVT0028).
+     * {@link ExpressionResolver.ExpressionResolutionUserException} (WFLYHCVT0030).
      */
     @Test
     public void resolveExpressionRejectsFileStoreEvenWhenVaultStoreIsPresent() {
@@ -192,7 +192,7 @@ public class NonVaultStoreRejectionIntegrationTestCase extends SubsystemJUnit5Te
                 () -> resolver.resolveExpression(
                         "${HC_VAULT::" + FILE_STORE_NAME + ":" + TEST_ALIAS + "}", ctx));
 
-        assertTrue(ex.getMessage().contains("WFLYHCVT0028"),
+        assertTrue(ex.getMessage().contains("WFLYHCVT0030"),
                 "Should reject the file store as non-Vault: " + ex.getMessage());
         assertTrue(ex.getMessage().contains("'" + FILE_STORE_NAME + "'"),
                 "Rejection message should identify the file store by name: " + ex.getMessage());
