@@ -49,7 +49,7 @@ public class AliasFormatFeatureIntegrationTestCase extends SubsystemJUnit5TestCa
         if (vault != null) {
             return;
         }
-        vault = new VaultContainer<>(DockerImageName.parse("hashicorp/vault:1.21"))
+        vault = new VaultContainer<>(DockerImageName.parse(VaultImages.VAULT))
                 .withVaultToken(VAULT_TOKEN)
                 .withInitCommand(
                         "secrets enable transit",

@@ -19,13 +19,14 @@ on:
 
 jobs:
   build-and-test-non-lts:
-    name: Build and Test - Java ${{ github.event.inputs.java_version || '26' }} - ${{ matrix.os }}
+    name: Build and Test - Java ${{ github.event.inputs.java_version || '26' }} - ${{ matrix.os }} - Vault ${{ matrix.vault-version }}
     runs-on: ${{ matrix.os }}
-    
+
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        vault-version: ['2.2.1', '2.1.2', '1.19.5']
     
     steps:
       # 1. Checkout code
@@ -118,24 +119,24 @@ jobs:
           JAVA_VERSION="${{ github.event.inputs.java_version || '26' }}"
           # Clear reports from the previous JDK/vendor run.
           find . -type f \( -path '*/target/surefire-reports/*' -o -path '*/target/failsafe-reports/*' \) -delete
-          mvn -pl subsystem,testsuite verify -DskipITs=${{ matrix.os != 'ubuntu-latest' }} -Djdk.test.version=${JAVA_VERSION} -Djdk.test.vendor=temurin -B
+          mvn -pl subsystem,testsuite verify -DskipITs=${{ matrix.os != 'ubuntu-latest' }} -Djdk.test.version=${JAVA_VERSION} -Djdk.test.vendor=temurin -Dvault.docker.image=hashicorp/vault:${{ matrix.vault-version }} -B
         continue-on-error: true
       
-      - name: Publish test results - Java ${{ github.event.inputs.java_version || '26' }} (Temurin) - ${{ matrix.os }}
+      - name: Publish test results - Java ${{ github.event.inputs.java_version || '26' }} (Temurin) - ${{ matrix.os }} - Vault ${{ matrix.vault-version }}
         if: always() && matrix.os == 'ubuntu-latest'
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
           files: |
             **/target/surefire-reports/TEST-*.xml
             **/target/failsafe-reports/TEST-*.xml
-          check_name: 'Test Results - Java ${{ github.event.inputs.java_version || ''26'' }} (Temurin) - ${{ matrix.os }}'
+          check_name: 'Test Results - Java ${{ github.event.inputs.java_version || ''26'' }} (Temurin) - ${{ matrix.os }} - Vault ${{ matrix.vault-version }}'
           comment_mode: off
       
-      - name: Upload test results - Java ${{ github.event.inputs.java_version || '26' }} (Temurin) - ${{ matrix.os }}
+      - name: Upload test results - Java ${{ github.event.inputs.java_version || '26' }} (Temurin) - ${{ matrix.os }} - Vault ${{ matrix.vault-version }}
         if: always() && steps.test-nonlts-temurin.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-java${{ github.event.inputs.java_version || '26' }}-temurin-${{ matrix.os }}
+          name: test-results-java${{ github.event.inputs.java_version || '26' }}-temurin-${{ matrix.os }}-vault-${{ matrix.vault-version }}
           path: |
             **/target/surefire-reports/**
             **/target/failsafe-reports/**
@@ -149,24 +150,24 @@ jobs:
           JAVA_VERSION="${{ github.event.inputs.java_version || '26' }}"
           # Clear reports from the previous JDK/vendor run.
           find . -type f \( -path '*/target/surefire-reports/*' -o -path '*/target/failsafe-reports/*' \) -delete
-          mvn -pl subsystem,testsuite verify -DskipITs=${{ matrix.os != 'ubuntu-latest' }} -Djdk.test.version=${JAVA_VERSION} -Djdk.test.vendor=semeru -B
+          mvn -pl subsystem,testsuite verify -DskipITs=${{ matrix.os != 'ubuntu-latest' }} -Djdk.test.version=${JAVA_VERSION} -Djdk.test.vendor=semeru -Dvault.docker.image=hashicorp/vault:${{ matrix.vault-version }} -B
         continue-on-error: true
       
-      - name: Publish test results - Java ${{ github.event.inputs.java_version || '26' }} (Semeru) - ${{ matrix.os }}
+      - name: Publish test results - Java ${{ github.event.inputs.java_version || '26' }} (Semeru) - ${{ matrix.os }} - Vault ${{ matrix.vault-version }}
         if: always() && matrix.os == 'ubuntu-latest'
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
           files: |
             **/target/surefire-reports/TEST-*.xml
             **/target/failsafe-reports/TEST-*.xml
-          check_name: 'Test Results - Java ${{ github.event.inputs.java_version || ''26'' }} (Semeru) - ${{ matrix.os }}'
+          check_name: 'Test Results - Java ${{ github.event.inputs.java_version || ''26'' }} (Semeru) - ${{ matrix.os }} - Vault ${{ matrix.vault-version }}'
           comment_mode: off
       
-      - name: Upload test results - Java ${{ github.event.inputs.java_version || '26' }} (Semeru) - ${{ matrix.os }}
+      - name: Upload test results - Java ${{ github.event.inputs.java_version || '26' }} (Semeru) - ${{ matrix.os }} - Vault ${{ matrix.vault-version }}
         if: always() && steps.test-nonlts-semeru.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-java${{ github.event.inputs.java_version || '26' }}-semeru-${{ matrix.os }}
+          name: test-results-java${{ github.event.inputs.java_version || '26' }}-semeru-${{ matrix.os }}-vault-${{ matrix.vault-version }}
           path: |
             **/target/surefire-reports/**
             **/target/failsafe-reports/**

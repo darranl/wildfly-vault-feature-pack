@@ -55,7 +55,7 @@ public class VaultExpressionComplexAliasIntegrationTestCase extends SubsystemJUn
         if (vault != null) {
             return;
         }
-        vault = new VaultContainer<>(DockerImageName.parse("hashicorp/vault:1.21"))
+        vault = new VaultContainer<>(DockerImageName.parse(VaultImages.VAULT))
                 .withVaultToken(VAULT_TOKEN)
                 .withInitCommand(
                         "secrets enable -version=1 -path=secret-v1 kv",

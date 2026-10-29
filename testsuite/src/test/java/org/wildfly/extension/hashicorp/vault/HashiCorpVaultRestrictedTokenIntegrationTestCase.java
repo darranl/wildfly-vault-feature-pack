@@ -222,7 +222,7 @@ public class HashiCorpVaultRestrictedTokenIntegrationTestCase {
 
         @Override
         public void setup(ManagementClient managementClient, String containerId) throws Exception {
-            vault = new VaultContainer<>(DockerImageName.parse("hashicorp/vault:1.21"))
+            vault = new VaultContainer<>(DockerImageName.parse(VaultImages.VAULT))
                     .withVaultToken(ROOT_TOKEN)
                     .withInitCommand(
                             "kv put secret/allowed my_key=my_value"

@@ -45,6 +45,8 @@
              But make it externally controllable in case someone wants to test with this turned off -->
         <ignore.not.excluded.layers>true</ignore.not.excluded.layers>
         <overwrite.provisioned.server>true</overwrite.provisioned.server>
+        <!-- Vault docker image used by the integration tests -->
+        <vault.docker.image>hashicorp/vault:2.2.1</vault.docker.image>
     </properties>
 
     <dependencyManagement>
@@ -358,6 +360,7 @@
                                 <arquillian.launch>wildfly</arquillian.launch>
                                 <server.jvm.args>${server.jvm.args}</server.jvm.args>
                                 <server.jboss.args>${server.jboss.args}</server.jboss.args>
+                                <vault.docker.image>${vault.docker.image}</vault.docker.image>
                             </systemPropertyVariables>
                             <argLine>${surefire.memory.args}</argLine>
                         </configuration>

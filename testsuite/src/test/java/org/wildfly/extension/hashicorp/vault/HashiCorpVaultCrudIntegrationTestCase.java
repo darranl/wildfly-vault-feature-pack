@@ -460,7 +460,7 @@ public class HashiCorpVaultCrudIntegrationTestCase {
 
         @Override
         public void setup(ManagementClient managementClient, String containerId) throws Exception {
-            vault = new VaultContainer<>(DockerImageName.parse("hashicorp/vault:1.21"))
+            vault = new VaultContainer<>(DockerImageName.parse(VaultImages.VAULT))
                     .withVaultToken(VAULT_TOKEN)
                     .withInitCommand(
                             "secrets enable transit",

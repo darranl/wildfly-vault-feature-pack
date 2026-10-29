@@ -53,7 +53,7 @@ public class VaultExpressionResolverIntegrationTestCase extends SubsystemJUnit5T
         if (vault != null) {
             return;
         }
-        vault = new VaultContainer<>(DockerImageName.parse("hashicorp/vault:1.21"))
+        vault = new VaultContainer<>(DockerImageName.parse(VaultImages.VAULT))
                 .withVaultToken(VAULT_TOKEN)
                 .withInitCommand(
                         "secrets enable transit",

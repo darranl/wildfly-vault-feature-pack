@@ -94,7 +94,7 @@ public class NonVaultStoreRejectionIntegrationTestCase extends SubsystemJUnit5Te
 
     private static synchronized void ensureVaultStarted() {
         if (vault != null) return;
-        vault = new VaultContainer<>(DockerImageName.parse("hashicorp/vault:1.21"))
+        vault = new VaultContainer<>(DockerImageName.parse(VaultImages.VAULT))
                 .withVaultToken(VAULT_TOKEN);
         vault.start();
     }

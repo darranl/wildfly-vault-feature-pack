@@ -290,7 +290,7 @@ public class HashiCorpVaultReloadAndAvailabilityIntegrationTestCase {
             try (ServerSocket socket = new ServerSocket(0)) {
                 hostPort = socket.getLocalPort();
             }
-            vault = new VaultContainer<>(DockerImageName.parse("hashicorp/vault:1.21"))
+            vault = new VaultContainer<>(DockerImageName.parse(VaultImages.VAULT))
                     .withVaultToken(VAULT_TOKEN);
             // Docker can reassign a random host port on restart. Keep the endpoint used
             // by WildFly unchanged throughout the availability tests.
