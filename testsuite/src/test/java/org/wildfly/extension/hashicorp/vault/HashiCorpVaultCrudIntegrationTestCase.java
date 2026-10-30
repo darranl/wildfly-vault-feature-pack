@@ -203,6 +203,66 @@ public class HashiCorpVaultCrudIntegrationTestCase {
                 "Expected alias2 removed");
     }
 
+    /**
+     * Exercises add-alias, read-aliases and remove-alias against KVv2 multi-segment mounts
+     * ({@code team/project1} .. {@code team/project5}). Before removing the aliases, verifies that nothing was
+     * written to the default {@code secret/} mount.
+     */
+    @Test
+    public void testMultiSegmentMountAliasLifecycle(@ArquillianResource ManagementClient managementClient) throws Exception {
+        final int count = 5;
+        String[] aliases = new String[count];
+        String[] secretPaths = new String[count];
+        for (int i = 1; i <= count; i++) {
+            secretPaths[i - 1] = "multiseg" + i;
+            aliases[i - 1] = "engine=KVv2@team/project" + i + "#" + secretPaths[i - 1] + "?key";
+        }
+
+        try {
+            for (int i = 0; i < count; i++) {
+                ModelNode add = Util.createOperation(OP_ADD_ALIAS, CREDENTIAL_STORE_ADDRESS);
+                add.get(ATTR_ALIAS).set(aliases[i]);
+                add.get(ATTR_SECRET_VALUE).set("multi-segment-value-" + (i + 1));
+                ModelNode result = executeOperation(managementClient, add);
+                assertEquals(SUCCESS, result.get(OUTCOME).asString(), "add-alias " + aliases[i] + " should succeed: " + result);
+            }
+
+            for (int i = 1; i <= count; i++) {
+                ModelNode readAliases = Util.createOperation(OP_READ_ALIASES, CREDENTIAL_STORE_ADDRESS);
+                readAliases.get(ATTR_PATH).set("engine=KVv2@team/project" + i + "#");
+                readAliases.get(ATTR_RECURSIVE).set(true);
+                ModelNode readResult = executeOperation(managementClient, readAliases);
+                assertEquals(SUCCESS, readResult.get(OUTCOME).asString(), "read-aliases should succeed: " + readResult);
+                List<ModelNode> list = readResult.get(RESULT).asList();
+                String expectedSecretPath = secretPaths[i - 1];
+                assertTrue(list.stream().anyMatch(n -> n.asString().contains(expectedSecretPath + "?key")),
+                        "Expected an alias for '" + expectedSecretPath + "?key' in mount team/project" + i + ", got: " + list);
+            }
+
+            // The aliases must not have been written to the default secret/ mount
+            HttpResponse<String> listing = vaultGet("/v1/secret/metadata/?list=true");
+            assertEquals(200, listing.statusCode(), "Got status response status code: " + listing.statusCode() + " expecting 200");
+            String listingBody = listing.body();
+            for (int i = 0; i < count; i++) {
+                assertFalse(listingBody.contains(secretPaths[i]),
+                        "Secret path '" + secretPaths[i] + "' must not be written to the default secret/ mount: " + listingBody);
+                assertFalse(listingBody.contains("team"),
+                        "Mount path segments must not be written to the default secret/ mount: " + listingBody);
+                assertEquals(404, vaultGet("/v1/secret/data/" + secretPaths[i]).statusCode(),
+                        "Secret '" + secretPaths[i] + "' must not exist in the default secret/ mount");
+                assertEquals(200, vaultGet("/v1/team/project" + (i + 1) + "/data/" + secretPaths[i]).statusCode(),
+                        "Secret '" + secretPaths[i] + "' should exist in mount team/project" + (i + 1));
+            }
+        } finally {
+            for (String alias : aliases) {
+                ModelNode remove = Util.createOperation(OP_REMOVE_ALIAS, CREDENTIAL_STORE_ADDRESS);
+                remove.get(ATTR_ALIAS).set(alias);
+                ModelNode result = executeOperation(managementClient, remove);
+                assertEquals(SUCCESS, result.get(OUTCOME).asString(), "Cleanup remove-alias " + alias + " failed: " + result);
+            }
+        }
+    }
+
     // =====================================================================
     // Deployed application accessing vault secrets
     // =====================================================================
@@ -389,6 +449,14 @@ public class HashiCorpVaultCrudIntegrationTestCase {
     // Helpers
     // =====================================================================
 
+    private static HttpResponse<String> vaultGet(String path) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(vault.getHttpHostAddress() + path))
+                .header("X-Vault-Token", VAULT_TOKEN)
+                .GET()
+                .build();
+        return HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    }
+
     private static ModelNode executeOperation(ManagementClient client, ModelNode operation) throws IOException {
         return client.getControllerClient().execute(operation);
     }
@@ -460,11 +528,16 @@ public class HashiCorpVaultCrudIntegrationTestCase {
 
         @Override
         public void setup(ManagementClient managementClient, String containerId) throws Exception {
-            vault = new VaultContainer<>(DockerImageName.parse("hashicorp/vault:1.21"))
+            vault = new VaultContainer<>(DockerImageName.parse(VaultImages.VAULT))
                     .withVaultToken(VAULT_TOKEN)
                     .withInitCommand(
                             "secrets enable transit",
                             "write -f transit/keys/my-key",
+                            "secrets enable -version=2 -path=team/project1 kv",
+                            "secrets enable -version=2 -path=team/project2 kv",
+                            "secrets enable -version=2 -path=team/project3 kv",
+                            "secrets enable -version=2 -path=team/project4 kv",
+                            "secrets enable -version=2 -path=team/project5 kv",
                             "kv put secret/testing1 top_secret=password123"
                     );
             vault.start();

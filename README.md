@@ -29,6 +29,13 @@ Build the project using Maven with Java 25 on `PATH` and `JAVA_HOME`:
 mvn clean install
 ```
 
+The build uses WildFly 42.0.0.Final and its Core 34.0.0.Final baseline, with
+`wildfly-elytron-integration` overridden to 35.0.0.Beta1 for the new on-demand
+resource APIs. The subsystem compiles against that artifact, and the testsuite
+applies the same artifact override when provisioning its servers. Keep this
+override until the selected WildFly release includes the required Elytron
+subsystem APIs.
+
 ## Local multi-JDK testing with Maven toolchains
 
 This project targets Java 17 bytecode. By default, tests run on the same JDK that is running Maven, as long as that JDK is Java 25 or later.
@@ -47,27 +54,48 @@ If you want to run tests with a different JDK without changing your current `JAV
 
 Default behaviour using your current JDK:
 
+After the initial build, select the two modules containing tests to reuse the
+built feature pack. This avoids repeating Galleon feature-pack generation during
+each JDK/vendor run.
+
 ```bash
-mvn test
+mvn -pl subsystem,testsuite verify
 ```
 
 Opt in to a specific toolchain-managed JDK:
 
 ```bash
-mvn test -Djdk.test.version=17
-mvn test -Djdk.test.version=21
-mvn test -Djdk.test.version=25
+mvn -pl subsystem,testsuite verify -Djdk.test.version=17
+mvn -pl subsystem,testsuite verify -Djdk.test.version=21
+mvn -pl subsystem,testsuite verify -Djdk.test.version=25
 ```
 
 Select a specific distribution when using toolchains:
 
 ```bash
-mvn test -Djdk.test.version=21 -Djdk.test.vendor=temurin
-mvn test -Djdk.test.version=21 -Djdk.test.vendor=semeru
+mvn -pl subsystem,testsuite verify -Djdk.test.version=21 -Djdk.test.vendor=temurin
+mvn -pl subsystem,testsuite verify -Djdk.test.version=21 -Djdk.test.vendor=semeru
 ```
 
 Toolchains are activated only when `jdk.test.version` is set. If `jdk.test.vendor` is not specified, it defaults to `temurin`.
 
+
+`verify` runs both Surefire tests and the Vault integration tests through Failsafe,
+and fails the build if either suite fails. `mvn test` runs only the Surefire tests.
+Vault integration tests require a Docker-compatible container runtime, such as Docker
+or Podman. With a selected toolchain, both Failsafe and its managed WildFly server
+use that JDK; Maven continues to run on the build JDK (Java 25 or later).
+
+CI builds artifacts once with tests skipped, then runs `mvn -pl subsystem,testsuite verify` for each JDK
+and vendor. Vault integration tests run on Linux; Windows and macOS retain
+Surefire coverage with `-DskipITs=true`. Both `target/surefire-reports/` and
+`target/failsafe-reports/` are
+published after each permutation; report artifacts are uploaded only when that
+permutation fails. Report files are cleared before each permutation while keeping
+compiled classes, packaged artifacts and provisioned servers. Check the Failsafe XML reports for
+`*IntegrationTestCase` results and skipped counts when verifying coverage; a fast
+successful Surefire run alone does not establish Vault compatibility. Vault image
+selection is defined by the test fixtures.
 
 ### Testing with all Java versions
 
@@ -77,10 +105,14 @@ To run tests against all supported Java versions (17, 21, 25) in a single comman
 mvn clean install -Ptest-all-versions
 ```
 
-This profile runs tests sequentially with each Java version and creates separate test report directories:
+This profile runs Surefire tests sequentially with each Java version and creates separate test report directories:
 - `target/surefire-reports-java17-temurin/`
 - `target/surefire-reports-java21-temurin/`
 - `target/surefire-reports-java25-temurin/`
+
+The profile does not repeat Failsafe integration tests for each JDK. For complete
+coverage, run `mvn -pl subsystem,testsuite verify -Djdk.test.version=... -Djdk.test.vendor=...` separately
+for each JDK and vendor, as CI does.
 
 You can specify a different JDK distribution:
 

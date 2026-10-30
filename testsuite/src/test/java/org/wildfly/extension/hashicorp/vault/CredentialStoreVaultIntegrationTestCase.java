@@ -51,7 +51,7 @@ public class CredentialStoreVaultIntegrationTestCase extends SubsystemJUnit5Test
         if (vault != null) {
             return;
         }
-        vault = new VaultContainer<>(DockerImageName.parse("hashicorp/vault:1.13"))
+        vault = new VaultContainer<>(DockerImageName.parse(VaultImages.VAULT))
                 .withVaultToken(VAULT_TOKEN)
                 .withInitCommand(
                         "secrets enable transit",

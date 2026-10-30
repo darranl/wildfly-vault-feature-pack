@@ -38,7 +38,7 @@ public class HashiCorpVaultHttpsAuthenticationContextIntegrationTestCase {
 
     static {
         try {
-            VAULT = new VaultContainerHttps<>("hashicorp/vault:1.21", false);
+            VAULT = new VaultContainerHttps<>(VaultImages.VAULT, false);
             VAULT.withVaultToken(VAULT_TOKEN).withInitCommand(
                     "secrets enable kv-v2",
                     "kv put secret/testing1 top_secret=password123"

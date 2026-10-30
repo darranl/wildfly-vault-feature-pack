@@ -11,13 +11,14 @@ on:
 
 jobs:
   build-and-test:
-    name: Build and Test - ${{ matrix.os }}
+    name: Build and Test - ${{ matrix.os }} - Vault ${{ matrix.vault-version }}
     runs-on: ${{ matrix.os }}
-    
+
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        vault-version: ['2.2.1', '2.1.2', '1.19.5']
     
     steps:
       # 1. Checkout code
@@ -165,6 +166,7 @@ jobs:
         shell: bash
         run: |
           export JAVA_HOME="${JAVA_HOME_25_TEMURIN}"
+          echo "JAVA_HOME=$JAVA_HOME" >> "$GITHUB_ENV"
           mvn -version
           mvn clean install -DskipTests -B -V
       
@@ -173,47 +175,60 @@ jobs:
         id: test-java17-temurin
         shell: bash
         run: |
-          mvn test -Djdk.test.version=17 -Djdk.test.vendor=temurin -B
+          # Clear reports from the previous JDK/vendor run.
+          find . -type f \( -path '*/target/surefire-reports/*' -o -path '*/target/failsafe-reports/*' \) -delete
+          mvn -pl subsystem,testsuite verify -DskipITs=${{ matrix.os != 'ubuntu-latest' }} -Djdk.test.version=17 -Djdk.test.vendor=temurin -Dvault.docker.image=hashicorp/vault:${{ matrix.vault-version }} -B
         continue-on-error: true
       
-      - name: Publish test results - Java 17 (Temurin) - ${{ matrix.os }}
+      - name: Publish test results - Java 17 (Temurin) - ${{ matrix.os }} - Vault ${{ matrix.vault-version }}
         if: always() && matrix.os == 'ubuntu-latest'
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
-          files: '**/target/surefire-reports/TEST-*.xml'
-          check_name: 'Test Results - Java 17 (Temurin) - ${{ matrix.os }}'
+          files: |
+            **/target/surefire-reports/TEST-*.xml
+            **/target/failsafe-reports/TEST-*.xml
+          check_name: 'Test Results - Java 17 (Temurin) - ${{ matrix.os }} - Vault ${{ matrix.vault-version }}'
           comment_mode: off
       
-      - name: Upload test results - Java 17 (Temurin) - ${{ matrix.os }}
-        if: failure() && steps.test-java17-temurin.outcome == 'failure'
+      - name: Upload test results - Java 17 (Temurin) - ${{ matrix.os }} - Vault ${{ matrix.vault-version }}
+        if: always() && steps.test-java17-temurin.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-java17-temurin-${{ matrix.os }}
-          path: '**/target/surefire-reports/**'
+          name: test-results-java17-temurin-${{ matrix.os }}-vault-${{ matrix.vault-version }}
+          path: |
+            **/target/surefire-reports/**
+            **/target/failsafe-reports/**
           retention-days: 30
       
+      # Vault integration tests require Linux containers. Keep Surefire tests on all OSes.
       # 6. Run tests with Java 17 (Semeru)
       - name: Test with Java 17 (Semeru)
         id: test-java17-semeru
         shell: bash
         run: |
-          mvn test -Djdk.test.version=17 -Djdk.test.vendor=semeru -B
+          # Clear reports from the previous JDK/vendor run.
+          find . -type f \( -path '*/target/surefire-reports/*' -o -path '*/target/failsafe-reports/*' \) -delete
+          mvn -pl subsystem,testsuite verify -DskipITs=${{ matrix.os != 'ubuntu-latest' }} -Djdk.test.version=17 -Djdk.test.vendor=semeru -Dvault.docker.image=hashicorp/vault:${{ matrix.vault-version }} -B
         continue-on-error: true
       
-      - name: Publish test results - Java 17 (Semeru) - ${{ matrix.os }}
+      - name: Publish test results - Java 17 (Semeru) - ${{ matrix.os }} - Vault ${{ matrix.vault-version }}
         if: always() && matrix.os == 'ubuntu-latest'
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
-          files: '**/target/surefire-reports/TEST-*.xml'
-          check_name: 'Test Results - Java 17 (Semeru) - ${{ matrix.os }}'
+          files: |
+            **/target/surefire-reports/TEST-*.xml
+            **/target/failsafe-reports/TEST-*.xml
+          check_name: 'Test Results - Java 17 (Semeru) - ${{ matrix.os }} - Vault ${{ matrix.vault-version }}'
           comment_mode: off
       
-      - name: Upload test results - Java 17 (Semeru) - ${{ matrix.os }}
-        if: failure() && steps.test-java17-semeru.outcome == 'failure'
+      - name: Upload test results - Java 17 (Semeru) - ${{ matrix.os }} - Vault ${{ matrix.vault-version }}
+        if: always() && steps.test-java17-semeru.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-java17-semeru-${{ matrix.os }}
-          path: '**/target/surefire-reports/**'
+          name: test-results-java17-semeru-${{ matrix.os }}-vault-${{ matrix.vault-version }}
+          path: |
+            **/target/surefire-reports/**
+            **/target/failsafe-reports/**
           retention-days: 30
       
       # 7. Run tests with Java 21 (Temurin)
@@ -221,23 +236,29 @@ jobs:
         id: test-java21-temurin
         shell: bash
         run: |
-          mvn test -Djdk.test.version=21 -Djdk.test.vendor=temurin -B
+          # Clear reports from the previous JDK/vendor run.
+          find . -type f \( -path '*/target/surefire-reports/*' -o -path '*/target/failsafe-reports/*' \) -delete
+          mvn -pl subsystem,testsuite verify -DskipITs=${{ matrix.os != 'ubuntu-latest' }} -Djdk.test.version=21 -Djdk.test.vendor=temurin -Dvault.docker.image=hashicorp/vault:${{ matrix.vault-version }} -B
         continue-on-error: true
       
-      - name: Publish test results - Java 21 (Temurin) - ${{ matrix.os }}
+      - name: Publish test results - Java 21 (Temurin) - ${{ matrix.os }} - Vault ${{ matrix.vault-version }}
         if: always() && matrix.os == 'ubuntu-latest'
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
-          files: '**/target/surefire-reports/TEST-*.xml'
-          check_name: 'Test Results - Java 21 (Temurin) - ${{ matrix.os }}'
+          files: |
+            **/target/surefire-reports/TEST-*.xml
+            **/target/failsafe-reports/TEST-*.xml
+          check_name: 'Test Results - Java 21 (Temurin) - ${{ matrix.os }} - Vault ${{ matrix.vault-version }}'
           comment_mode: off
       
-      - name: Upload test results - Java 21 (Temurin) - ${{ matrix.os }}
-        if: failure() && steps.test-java21-temurin.outcome == 'failure'
+      - name: Upload test results - Java 21 (Temurin) - ${{ matrix.os }} - Vault ${{ matrix.vault-version }}
+        if: always() && steps.test-java21-temurin.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-java21-temurin-${{ matrix.os }}
-          path: '**/target/surefire-reports/**'
+          name: test-results-java21-temurin-${{ matrix.os }}-vault-${{ matrix.vault-version }}
+          path: |
+            **/target/surefire-reports/**
+            **/target/failsafe-reports/**
           retention-days: 30
       
       # 8. Run tests with Java 21 (Semeru)
@@ -245,23 +266,29 @@ jobs:
         id: test-java21-semeru
         shell: bash
         run: |
-          mvn test -Djdk.test.version=21 -Djdk.test.vendor=semeru -B
+          # Clear reports from the previous JDK/vendor run.
+          find . -type f \( -path '*/target/surefire-reports/*' -o -path '*/target/failsafe-reports/*' \) -delete
+          mvn -pl subsystem,testsuite verify -DskipITs=${{ matrix.os != 'ubuntu-latest' }} -Djdk.test.version=21 -Djdk.test.vendor=semeru -Dvault.docker.image=hashicorp/vault:${{ matrix.vault-version }} -B
         continue-on-error: true
       
-      - name: Publish test results - Java 21 (Semeru) - ${{ matrix.os }}
+      - name: Publish test results - Java 21 (Semeru) - ${{ matrix.os }} - Vault ${{ matrix.vault-version }}
         if: always() && matrix.os == 'ubuntu-latest'
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
-          files: '**/target/surefire-reports/TEST-*.xml'
-          check_name: 'Test Results - Java 21 (Semeru) - ${{ matrix.os }}'
+          files: |
+            **/target/surefire-reports/TEST-*.xml
+            **/target/failsafe-reports/TEST-*.xml
+          check_name: 'Test Results - Java 21 (Semeru) - ${{ matrix.os }} - Vault ${{ matrix.vault-version }}'
           comment_mode: off
       
-      - name: Upload test results - Java 21 (Semeru) - ${{ matrix.os }}
-        if: failure() && steps.test-java21-semeru.outcome == 'failure'
+      - name: Upload test results - Java 21 (Semeru) - ${{ matrix.os }} - Vault ${{ matrix.vault-version }}
+        if: always() && steps.test-java21-semeru.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-java21-semeru-${{ matrix.os }}
-          path: '**/target/surefire-reports/**'
+          name: test-results-java21-semeru-${{ matrix.os }}-vault-${{ matrix.vault-version }}
+          path: |
+            **/target/surefire-reports/**
+            **/target/failsafe-reports/**
           retention-days: 30
       
       # 9. Run tests with Java 25 (Temurin)
@@ -269,23 +296,29 @@ jobs:
         id: test-java25-temurin
         shell: bash
         run: |
-          mvn test -Djdk.test.version=25 -Djdk.test.vendor=temurin -B
+          # Clear reports from the previous JDK/vendor run.
+          find . -type f \( -path '*/target/surefire-reports/*' -o -path '*/target/failsafe-reports/*' \) -delete
+          mvn -pl subsystem,testsuite verify -DskipITs=${{ matrix.os != 'ubuntu-latest' }} -Djdk.test.version=25 -Djdk.test.vendor=temurin -Dvault.docker.image=hashicorp/vault:${{ matrix.vault-version }} -B
         continue-on-error: true
       
-      - name: Publish test results - Java 25 (Temurin) - ${{ matrix.os }}
+      - name: Publish test results - Java 25 (Temurin) - ${{ matrix.os }} - Vault ${{ matrix.vault-version }}
         if: always() && matrix.os == 'ubuntu-latest'
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
-          files: '**/target/surefire-reports/TEST-*.xml'
-          check_name: 'Test Results - Java 25 (Temurin) - ${{ matrix.os }}'
+          files: |
+            **/target/surefire-reports/TEST-*.xml
+            **/target/failsafe-reports/TEST-*.xml
+          check_name: 'Test Results - Java 25 (Temurin) - ${{ matrix.os }} - Vault ${{ matrix.vault-version }}'
           comment_mode: off
       
-      - name: Upload test results - Java 25 (Temurin) - ${{ matrix.os }}
-        if: failure() && steps.test-java25-temurin.outcome == 'failure'
+      - name: Upload test results - Java 25 (Temurin) - ${{ matrix.os }} - Vault ${{ matrix.vault-version }}
+        if: always() && steps.test-java25-temurin.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-java25-temurin-${{ matrix.os }}
-          path: '**/target/surefire-reports/**'
+          name: test-results-java25-temurin-${{ matrix.os }}-vault-${{ matrix.vault-version }}
+          path: |
+            **/target/surefire-reports/**
+            **/target/failsafe-reports/**
           retention-days: 30
       
       # 10. Run tests with Java 25 (Semeru)
@@ -293,23 +326,29 @@ jobs:
         id: test-java25-semeru
         shell: bash
         run: |
-          mvn test -Djdk.test.version=25 -Djdk.test.vendor=semeru -B
+          # Clear reports from the previous JDK/vendor run.
+          find . -type f \( -path '*/target/surefire-reports/*' -o -path '*/target/failsafe-reports/*' \) -delete
+          mvn -pl subsystem,testsuite verify -DskipITs=${{ matrix.os != 'ubuntu-latest' }} -Djdk.test.version=25 -Djdk.test.vendor=semeru -Dvault.docker.image=hashicorp/vault:${{ matrix.vault-version }} -B
         continue-on-error: true
       
-      - name: Publish test results - Java 25 (Semeru) - ${{ matrix.os }}
+      - name: Publish test results - Java 25 (Semeru) - ${{ matrix.os }} - Vault ${{ matrix.vault-version }}
         if: always() && matrix.os == 'ubuntu-latest'
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
-          files: '**/target/surefire-reports/TEST-*.xml'
-          check_name: 'Test Results - Java 25 (Semeru) - ${{ matrix.os }}'
+          files: |
+            **/target/surefire-reports/TEST-*.xml
+            **/target/failsafe-reports/TEST-*.xml
+          check_name: 'Test Results - Java 25 (Semeru) - ${{ matrix.os }} - Vault ${{ matrix.vault-version }}'
           comment_mode: off
       
-      - name: Upload test results - Java 25 (Semeru) - ${{ matrix.os }}
-        if: failure() && steps.test-java25-semeru.outcome == 'failure'
+      - name: Upload test results - Java 25 (Semeru) - ${{ matrix.os }} - Vault ${{ matrix.vault-version }}
+        if: always() && steps.test-java25-semeru.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-java25-semeru-${{ matrix.os }}
-          path: '**/target/surefire-reports/**'
+          name: test-results-java25-semeru-${{ matrix.os }}-vault-${{ matrix.vault-version }}
+          path: |
+            **/target/surefire-reports/**
+            **/target/failsafe-reports/**
           retention-days: 30
       
       # 11. Check test results - fail job if any test permutation failed

@@ -85,6 +85,19 @@
                 </exclusions>
             </dependency>
 
+            <!-- Only the Elytron subsystem needs the new on-demand resource APIs. -->
+            <dependency>
+                <groupId>org.wildfly.core</groupId>
+                <artifactId>wildfly-elytron-integration</artifactId>
+                <version>${version.org.wildfly.core.elytron}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.wildfly.core</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
             <dependency>
                 <groupId>org.wildfly.core</groupId>
                 <artifactId>wildfly-elytron-integration</artifactId>
@@ -147,6 +160,10 @@
     </dependencyManagement>
 
     <dependencies>
+        <dependency>
+            <groupId>org.wildfly.core</groupId>
+            <artifactId>wildfly-elytron-integration</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.wildfly.core</groupId>
             <artifactId>wildfly-controller</artifactId>
