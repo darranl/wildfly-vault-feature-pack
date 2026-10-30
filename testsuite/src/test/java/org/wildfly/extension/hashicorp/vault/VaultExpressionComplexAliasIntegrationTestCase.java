@@ -17,14 +17,20 @@ import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.RunningMode;
+import org.jboss.as.controller.capability.RuntimeCapability;
+import org.jboss.as.controller.capability.registry.CapabilityScope;
+import org.jboss.as.controller.capability.registry.ImmutableCapabilityRegistry;
+import org.jboss.as.controller.capability.registry.RuntimeCapabilityRegistry;
+import org.jboss.as.controller.extension.ExtensionRegistry;
 import org.jboss.as.controller.operations.common.Util;
+import org.jboss.as.controller.registry.ManagementResourceRegistration;
+import org.jboss.as.controller.registry.Resource;
 import org.jboss.as.subsystem.test.AdditionalInitialization;
 import org.jboss.as.subsystem.test.KernelServices;
 import org.jboss.as.version.Stability;
 import org.jboss.dmr.ModelNode;
-import org.jboss.msc.service.ServiceContainer;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.utility.DockerImageName;
@@ -50,6 +56,7 @@ public class VaultExpressionComplexAliasIntegrationTestCase extends SubsystemJUn
     private static VaultContainer<?> vault;
     private KernelServices kernelServices;
     private VaultExpressionResolver resolver;
+    private ImmutableCapabilityRegistry capabilityRegistry;
 
     private static synchronized void ensureVaultStarted() {
         if (vault != null) {
@@ -64,12 +71,12 @@ public class VaultExpressionComplexAliasIntegrationTestCase extends SubsystemJUn
         vault.start();
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void startVault() {
         ensureVaultStarted();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopVault() {
         if (vault != null) {
             vault.stop();
@@ -84,6 +91,14 @@ public class VaultExpressionComplexAliasIntegrationTestCase extends SubsystemJUn
             protected RunningMode getRunningMode() {
                 return RunningMode.NORMAL;
             }
+
+            @Override
+            protected void initializeExtraSubystemsAndModel(ExtensionRegistry extensionRegistry,
+                    Resource rootResource, ManagementResourceRegistration rootRegistration,
+                    RuntimeCapabilityRegistry registry) {
+                super.initializeExtraSubystemsAndModel(extensionRegistry, rootResource, rootRegistration, registry);
+                capabilityRegistry = registry;
+            }
         };
     }
 
@@ -91,7 +106,7 @@ public class VaultExpressionComplexAliasIntegrationTestCase extends SubsystemJUn
     protected String getSubsystemXml() {
         ensureVaultStarted();
         String hostAddress = vault.getHttpHostAddress();
-        return "<subsystem xmlns=\"urn:wildfly:hashicorp-vault:1.0\">\n"
+        return "<subsystem xmlns=\"urn:wildfly:hashicorp-vault:2.0\">\n"
                 + "    <credential-store name=\"" + CREDENTIAL_STORE_NAME + "\" host-address=\"" + hostAddress + "\">\n"
                 + "        <credential-reference clear-text=\"" + VAULT_TOKEN + "\"/>\n"
                 + "    </credential-store>\n"
@@ -245,29 +260,24 @@ public class VaultExpressionComplexAliasIntegrationTestCase extends SubsystemJUn
 
     private String resolveExpression(String alias) {
         String expression = "${HC_VAULT::" + CREDENTIAL_STORE_NAME + ":" + alias + "}";
-        OperationContext ctx = mockContextRuntime(kernelServices.getContainer());
+        OperationContext ctx = mockContextRuntime();
         String resolved = resolver.resolveExpression(expression, ctx);
         assertNotNull(resolved, "Expression should resolve to a non-null value: " + expression);
         return resolved;
     }
 
-    private static OperationContext mockContextRuntime(ServiceContainer container) {
+    private OperationContext mockContextRuntime() {
         InvocationHandler h = (proxy, method, args) -> {
             if ("getCurrentStage".equals(method.getName())) {
                 return OperationContext.Stage.RUNTIME;
             }
-            if ("getCapabilityServiceName".equals(method.getName()) && args != null && args.length == 3) {
-                String capabilityName = (String) args[0];
+            if ("getCapabilityRuntimeAPI".equals(method.getName()) && args != null && args.length == 3) {
+                String capabilityBaseName = (String) args[0];
                 String dynamicPart = (String) args[1];
-                if (CredentialStoreDefinition.HASHICORP_VAULT_CREDENTIAL_STORE_CAPABILITY.equals(capabilityName)) {
-                    return CredentialStoreDefinition.HASHICORP_VAULT_CREDENTIAL_STORE_RUNTIME_CAPABILITY
-                            .getCapabilityServiceName(dynamicPart);
-                }
-                return CredentialStoreDefinition.CREDENTIAL_STORE_RUNTIME_CAPABILITY
-                        .getCapabilityServiceName(dynamicPart);
-            }
-            if ("getServiceRegistry".equals(method.getName())) {
-                return container;
+                @SuppressWarnings("unchecked")
+                Class<Object> apiType = (Class<Object>) args[2];
+                String fullName = RuntimeCapability.buildDynamicCapabilityName(capabilityBaseName, dynamicPart);
+                return capabilityRegistry.getCapabilityRuntimeAPI(fullName, CapabilityScope.GLOBAL, apiType);
             }
             Class<?> rt = method.getReturnType();
             if (rt == boolean.class) return false;
