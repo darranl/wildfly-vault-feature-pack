@@ -29,6 +29,13 @@ Build the project using Maven with Java 25 on `PATH` and `JAVA_HOME`:
 mvn clean install
 ```
 
+The build uses WildFly 42.0.0.Final and its Core 34.0.0.Final baseline, with
+`wildfly-elytron-integration` overridden to 35.0.0.Beta1 for the new on-demand
+resource APIs. The subsystem compiles against that artifact, and the testsuite
+applies the same artifact override when provisioning its servers. Keep this
+override until the selected WildFly release includes the required Elytron
+subsystem APIs.
+
 ## Local multi-JDK testing with Maven toolchains
 
 This project targets Java 17 bytecode. By default, tests run on the same JDK that is running Maven, as long as that JDK is Java 25 or later.
